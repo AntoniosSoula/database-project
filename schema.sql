@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS "ΜΕΛΟΣ_ΠΛΗΡΩΝΕΙ_ΣΥΝΔΡΟΜΗ" (
     "κωδικός συνδρομής" INTEGER DEFAULT 0,
     "μητρώο_μέλους" CHAR(4) NOT NULL, 
     "ημερομηνία πληρωμής" DATE,
-    PRIMARY KEY ("κωδικός συνδρομής", "μητρώο_μέλους"),
+    PRIMARY KEY ("κωδικός συνδρομής", "μητρώο_μέλους","ημερομηνία πληρωμής"),
     FOREIGN KEY ("κωδικός συνδρομής") REFERENCES "ΣΥΝΔΡΟΜΗ" ("κωδικός συνδρομής")
         ON DELETE CASCADE 
         ON UPDATE CASCADE,
