@@ -30,6 +30,23 @@ class MyApp(QDialog):
         except Exception as e:
             print(f"Error loading stylesheet: {e}")
             return None
+    def delete_member(self, row):
+    # Λήψη του μητρώου του μέλους που θέλουμε να διαγράψουμε
+        member_id = self.table.item(row, 0).text()
+
+    # Σύνδεση με τη βάση δεδομένων
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+
+    # Εκτέλεση του query για τη διαγραφή του μέλους από τη βάση δεδομένων
+        cursor.execute("DELETE FROM ΜΕΛΟΣ WHERE μητρώο_μέλους = ?", (member_id,))
+        conn.commit()
+
+    # Κλείσιμο της σύνδεσης με τη βάση
+        conn.close()
+
+    # Αφαίρεση της διαγραμμένης γραμμής από τον πίνακα
+        self.table.removeRow(row) 
     def show_table(self):
         # Αν ο πίνακας υπάρχει ήδη, αφαιρούμε τον
         if self.table_shown:
@@ -52,16 +69,18 @@ class MyApp(QDialog):
 
             # Ρύθμιση του αριθμού των γραμμών και στηλών του πίνακα
             self.table.setRowCount(len(rows))  # Αριθμός γραμμών
-            self.table.setColumnCount(8)  # Αριθμός στηλών, μία για κάθε attribute
+            self.table.setColumnCount(9)  # Αριθμός στηλών, μία για κάθε attribute
 
             # Ετικέτες στηλών
-            self.table.setHorizontalHeaderLabels(["Μητρώο Μέλους", "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", "Επίπεδο", "Τηλέφωνο","Φύλο" ,"Πλήθος Αδερφών"])
+            self.table.setHorizontalHeaderLabels(["Μητρώο Μέλους", "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", "Επίπεδο", "Τηλέφωνο","Φύλο" ,"Πλήθος Αδερφών","Διαγραφή"])
 
             # Προσθήκη δεδομένων στον πίνακα
             for row, row_data in enumerate(rows):
                 for column, value in enumerate(row_data):
                     self.table.setItem(row, column, QTableWidgetItem(str(value)))
-
+                delete_button = QPushButton("Διαγραφή")
+                delete_button.clicked.connect(lambda state, row=row: self.delete_member(row))
+                self.table.setCellWidget(row, 8, delete_button)
             # Εμφάνιση του πίνακα στην καρτέλα "Μέλη"
             tab_index = self.tabWidget.indexOf(self.tabMeli)  # Εντοπισμός της καρτέλας "Μέλη"
             widget = self.tabWidget.widget(tab_index)
