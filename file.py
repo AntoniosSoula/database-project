@@ -48,32 +48,56 @@ class MyApp(QDialog):
         print(f"Το μέλος με μητρώο {member_id} διαγράφηκε επιτυχώς.")
 
     def update_member(self, row):
-        # Επιλέγουμε τον αριθμό μητρώου και ζητάμε νέα δεδομένα για ενημέρωση
-        member_id = self.table.item(row, 0).text()
-        column_names = [
-            "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", "Επίπεδο", 
-            "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών"
-        ]
-        column_index = QInputDialog.getInt(
-            self, "Επιλογή Πεδίου", "Διάλεξε στήλη για ενημέρωση (1-7):\n" +
-            "\n".join([f"{i+1}. {name}" for i, name in enumerate(column_names)]),
-            1, 1, len(column_names)
-        )[0] - 1  # Γυρίζει σε zero-based index
+    # Επιλέγουμε τον αριθμό μητρώου και ζητάμε νέα δεδομένα για ενημέρωση
+    member_id = self.table.item(row, 0).text()
 
-        if column_index is None:
+    column_names = [
+        "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", "Επίπεδο", 
+        "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών"
+    ]
+
+    column_index = QInputDialog.getInt(
+        self, "Επιλογή Πεδίου", "Διάλεξε στήλη για ενημέρωση (1-7):\n" +
+        "\n".join([f"{i+1}. {name}" for i, name in enumerate(column_names)]),
+        1, 1, len(column_names)
+    )[0] - 1  # Γυρίζει σε zero-based index
+
+    if column_index is None:
+        return
+
+    new_value = None
+    if column_names[column_index] == "Ημερομηνία Γέννησης":
+        date_dialog = QDialog(self)
+        date_dialog.setWindowTitle("Επιλογή Ημερομηνίας")
+        layout = QVBoxLayout(date_dialog)
+
+        date_edit = QDateEdit()
+        date_edit.setCalendarPopup(True)
+        date_edit.setDate(QDate.currentDate())
+        layout.addWidget(date_edit)
+
+        confirm_button = QPushButton("OK")
+        confirm_button.clicked.connect(date_dialog.accept)
+        layout.addWidget(confirm_button)
+
+        if date_dialog.exec() == QDialog.DialogCode.Accepted:
+            new_value = date_edit.date().toString("yyyy-MM-dd")
+        else:
             return
-
+    else:
         new_value, ok = QInputDialog.getText(
             self, "Νέα Τιμή", f"Εισάγετε νέα τιμή για {column_names[column_index]}:"
         )
         if not ok or not new_value:
             return
 
-        # Ενημέρωση της βάσης δεδομένων
-        columns_db = ["επώνυμο", "όνομα", "ημερομηνία_γέννησης", "επίπεδο", 
-                      "τηλέφωνο", "φύλο", "πλήθος_αδελφών"]
+    try:
         conn = sqlite3.connect('database.db')
         cursor = conn.cursor()
+
+        columns_db = ["επώνυμο", "όνομα", "ημερομηνία_γέννησης", "επίπεδο", 
+                      "τηλέφωνο", "φύλο", "πλήθος_αδελφών"]
+
         cursor.execute(
             f"UPDATE ΜΕΛΟΣ SET {columns_db[column_index]} = ? WHERE μητρώο_μέλους = ?",
             (new_value, member_id)
@@ -81,9 +105,12 @@ class MyApp(QDialog):
         conn.commit()
         conn.close()
 
-        # Ενημέρωση του πίνακα στην εφαρμογή
         self.table.setItem(row, column_index + 1, QTableWidgetItem(new_value))
         print(f"Το μέλος με μητρώο {member_id} ενημερώθηκε.")
+
+    except Exception as e:
+        print(f"Σφάλμα: {e}")
+
 
     def show_table(self):
         if self.table_shown:
