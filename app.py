@@ -1,60 +1,37 @@
-import tkinter as tk
-from tkinter import messagebox
-from PIL import Image, ImageTk 
+import sys
+from PyQt6.QtWidgets import (
+    QApplication, QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout,
+    QPushButton, QMessageBox, QInputDialog, QLineEdit, QDateEdit,
+)
+from PyQt6.uic import loadUi
 import sqlite3
-from database import *
+from functools import partial
+from PyQt6.QtCore import QDate
+from ΤableManager import *  # Βεβαιώσου ότι η κλάση TableManager βρίσκεται στο σωστό αρχείο και μονοπάτι
 
-# Δημιουργία παραθύρου
-def login():
-    username = entry_username.get()
-    password = entry_password.get()
-    
-    role = check_login(username, password)
-    if role:
-        messagebox.showinfo("Επιτυχία", f"Καλωσήρθες, {role}!")
-    else:
-        messagebox.showerror("Σφάλμα", "Λάθος όνομα χρήστη ή κωδικός.")
-def main_page():
-    global bg_photo
-    window = tk.Tk()
-    window.title("Σύστημα Σύνδεσης")
-    window.geometry("800x600")  # Ορισμός μεγέθους παραθύρου
+class MyApp(QDialog):
+    def __init__(self):
+        super().__init__()
+        loadUi("untitled.ui", self)
+        
+        self.buttonTableTeam.clicked.connect(self.show_team_table)
+        self.buttonTableNoInTeam.clicked.connect(self.show_no_in_team_table)
+        self.buttonTableMeli.clicked.connect(self.show_meli_table)
+        
+    def show_team_table(self):
+        team_manager = TableManager("ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ", ["μητρώο_μέλος", "όνομα", "επώνυμο", "ημερομηνία_γέννησης", "επίπεδο", "τηλέφωνο", "φύλο", "πλήθος_αδελφών"], self)
+        team_manager.show_table()
 
-    # Προσθήκη εικόνας φόντου
-    bg_image = Image.open("pingpong.webp")  # Η εικόνα που θα χρησιμοποιηθεί ως φόντο
-    bg_image = bg_image.resize((800, 600), Image.Resampling.LANCZOS)
-    window.resizable(False, False)
-    bg_photo = ImageTk.PhotoImage(bg_image)
+    def show_no_in_team_table(self):
+        no_in_team_manager = TableManager("ΞΕΝΟΣ ΠΑΙΚΤΗΣ", ["Μητρώο", "Όνομα", "Επίπεδο", "Διαγραφή", "Ενημέρωση"], self)
+        no_in_team_manager.show_table()
 
-    bg_label = tk.Label(window, image=bg_photo)
-    bg_label.place(x=0, y=0, relwidth=1, relheight=1)  # Ρύθμιση πλήρους φόντου
-
-    # Δημιουργία πλαισίου για τα widgets
-    frame = tk.Frame(window, bg="#31363F",relief="solid", padx=30, pady=30,highlightbackground="#222831", highlightthickness=5)
-    frame.pack(pady=150)  # Χρήση `pack` για τοποθέτηση
-
-    # Προσθήκη ετικετών και πεδίων εισαγωγής
-    tk.Label(frame, text="Όνομα Χρήστη:", bg="#31363F",font=("Arial", 12),fg="white").pack(anchor="w", pady=5)
-    global entry_username
-    entry_username = tk.Entry(frame, width=30,bd=1)
-    entry_username.pack(pady=5)
-
-    tk.Label(frame, text="Κωδικός:", bg="#31363F",font=("Arial", 12),fg="white").pack(anchor="w", pady=5)
-    global entry_password
-    entry_password = tk.Entry(frame, show="*", width=30,bd=1)
-    entry_password.pack(pady=5)
-
-    # Προσθήκη κουμπιού σύνδεσης
-  
-    tk.Button(frame, text="Σύνδεση", command=login, font=("Arial", 12), bg="#76ABAE", fg="white", 
-                       relief="raised", padx=10, pady=5, bd=3, highlightthickness=0).pack(pady=10)
-    return window
-def main():
-    create_database()
-
-    # Δημιουργία παραθύρου με tkinter
-    window=main_page()
-    window.mainloop()
-
+    def show_meli_table(self):
+        meli_manager = TableManager("ΜΕΛΟΣ", ["μητρώο_μέλος", "όνομα", "επώνυμο", "ημερομηνία_γέννησης", "επίπεδο", "τηλέφωνο", "φύλο", "πλήθος_αδελφών"], self)
+        meli_manager.show_table()
+        
 if __name__ == "__main__":
-    main()
+    app = QApplication(sys.argv)  # Δημιουργία της εφαρμογής πρώτα
+    window = MyApp()  # Στη συνέχεια, δημιουργία του παραθύρου
+    window.show()
+    sys.exit(app.exec())  # Εκκίνηση του event loop

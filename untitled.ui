@@ -486,7 +486,7 @@ QTabBar::tab:selected {
        <rect>
         <x>50</x>
         <y>50</y>
-        <width>181</width>
+        <width>201</width>
         <height>41</height>
        </rect>
       </property>
@@ -552,6 +552,152 @@ QTabBar::tab:selected {
       </property>
       <property name="text">
        <string>Πίνακας Μελών</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="buttonTableTeam">
+      <property name="geometry">
+       <rect>
+        <x>50</x>
+        <y>140</y>
+        <width>201</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">        QPushButton {
+            font-size: 12px;
+            padding: 1px 2.7px;
+            font-weight: 500;
+            background: #598284;;
+            color: white;
+            border: none;
+            position: relative;
+            overflow: hidden;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        QPushButton::hover {
+            background: #3f5b5d;
+        }
+
+        QPushButton::pressed {
+            transform: scale(0.97);
+        }
+
+        QPushButton .gradient {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            left: 0;
+            top: 0;
+            border-radius: 2px;
+            margin-top: -0.25em;
+            background-image: linear-gradient(
+                rgba(0, 0, 0, 0),
+                rgba(0, 0, 0, 0),
+                rgba(0, 0, 0, 0.3)
+            );
+        }
+
+        QPushButton .label {
+            position: relative;
+            top: -1px;
+        }
+
+        QPushButton .transition {
+            transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+            transition-duration: 500ms;
+            background-color: #3f5b5d;
+            border-radius: 9999px;
+            width: 0;
+            height: 0;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        QPushButton:hover .transition {
+            width: 14em;
+            height: 14em;
+        }</string>
+      </property>
+      <property name="text">
+       <string>Πίνακας Παικτών της Ομάδας</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="buttonTableNoInTeam">
+      <property name="geometry">
+       <rect>
+        <x>50</x>
+        <y>230</y>
+        <width>201</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">        QPushButton {
+            font-size: 12px;
+            padding: 1px 2.7px;
+            font-weight: 500;
+            background: #598284;;
+            color: white;
+            border: none;
+            position: relative;
+            overflow: hidden;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        QPushButton::hover {
+            background: #3f5b5d;
+        }
+
+        QPushButton::pressed {
+            transform: scale(0.97);
+        }
+
+        QPushButton .gradient {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            left: 0;
+            top: 0;
+            border-radius: 2px;
+            margin-top: -0.25em;
+            background-image: linear-gradient(
+                rgba(0, 0, 0, 0),
+                rgba(0, 0, 0, 0),
+                rgba(0, 0, 0, 0.3)
+            );
+        }
+
+        QPushButton .label {
+            position: relative;
+            top: -1px;
+        }
+
+        QPushButton .transition {
+            transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+            transition-duration: 500ms;
+            background-color: #3f5b5d;
+            border-radius: 9999px;
+            width: 0;
+            height: 0;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        QPushButton:hover .transition {
+            width: 14em;
+            height: 14em;
+        }</string>
+      </property>
+      <property name="text">
+       <string>Πίνακας Ξένων Παικτών</string>
       </property>
      </widget>
     </widget>
