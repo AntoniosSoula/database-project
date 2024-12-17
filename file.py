@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import (
     QApplication, QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout, 
     QPushButton, QMessageBox, QInputDialog, QLineEdit, QDateEdit,
 )
+from PyQt6.QtWidgets import QDateEdit, QVBoxLayout
 from PyQt6.uic import loadUi
 import sqlite3
 from functools import partial
@@ -20,7 +21,41 @@ class MyApp(QDialog):
         self.backButton = QPushButton("Επιστροφή")
         self.backButton.setStyleSheet(self.Buttonstylesheet)
         self.backButton.clicked.connect(self.go_back)
-
+        
+        self.addButton = QPushButton("Προσθήκη Μέλους")
+        self.addButton.setStyleSheet(self.Buttonstylesheet)
+        self.addButton.clicked.connect(self.add_member)  # Συνδέστε το κουμπί με την συνάρτηση add_member
+        
+        # Προσθέστε το κουμπί "Προσθήκη Μέλους" στο layout
+        layout = self.tabWidget.widget(self.tabWidget.indexOf(self.tabMeli)).layout()
+        if layout is None:
+            layout = QVBoxLayout()
+            self.tabWidget.widget(self.tabWidget.indexOf(self.tabMeli)).setLayout(layout)
+        
+        layout.addWidget(self.addButton)  # Προσθήκη του κουμπιού στο layout
+    def get_next_member_id(self):
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT MAX(μητρώο_μέλους) FROM ΜΕΛΟΣ")
+        result = cursor.fetchone()
+        conn.close()
+    
+    # Αν δεν υπάρχουν μέλη, ξεκινάμε από το 1001
+        if result[0] is None:
+            return "1001"
+    
+    # Εξάγουμε το τελευταίο μητρώο και το αυξάνουμε κατά 1
+        last_id = int(result[0])
+        next_id = last_id + 1
+        return str(next_id).zfill(4)  # Επιστρέφουμε το επόμενο μητρώο με 4 ψηφία
+        
+    
+        try:
+            with open(style, "r") as f:
+                return f.read()
+        except Exception as e:
+            print(f"Error loading stylesheet: {e}")
+            return None
     def load_stylesheet(self, style):
         try:
             with open(style, "r") as f:
@@ -28,6 +63,66 @@ class MyApp(QDialog):
         except Exception as e:
             print(f"Error loading stylesheet: {e}")
             return None
+    def add_member(self):
+        # Λήψη του επόμενου μητρώου
+        new_member_id = self.get_next_member_id()
+
+        # Αναζήτηση στοιχείων του μέλους από τον χρήστη
+        name, ok1 = QInputDialog.getText(self, "Όνομα", "Εισάγετε το όνομα του μέλους:")
+        surname, ok2 = QInputDialog.getText(self, "Επώνυμο", "Εισάγετε το επώνυμο του μέλους:")
+        
+        if not ok1 or not ok2:  # Αν δεν επιβεβαιώσει τα δεδομένα, επιστρέφουμε
+            return
+
+        birth_date, ok3 = QInputDialog.getText(self, "Ημερομηνία Γέννησης", 
+                                                "Εισάγετε την ημερομηνία γέννησης (yyyy-MM-dd):")
+        level, ok4 = QInputDialog.getItem(self, "Επίπεδο", "Επιλέξτε το επίπεδο του μέλους:", 
+                                          ["ΑΡΧΑΡΙΟΣ", "ΕΡΑΣΙΤΕΧΝΗΣ", "ΠΡΟΧΩΡΗΜΕΝΟΣ", "ΕΠΑΓΓΕΛΜΑΤΙΑΣ"], 0, False)
+        phone, ok5 = QInputDialog.getText(self, "Τηλέφωνο", "Εισάγετε το τηλέφωνο του μέλους:")
+        gender, ok6 = QInputDialog.getItem(self, "Φύλο", "Επιλέξτε το φύλο του μέλους:", 
+                                           ["ΑΡΡΕΝ", "ΘΗΛΥ"], 0, False)
+        siblings, ok7 = QInputDialog.getInt(self, "Πλήθος Αδελφών", "Εισάγετε τον αριθμό αδελφών του μέλους:", 
+                                            0, 0, 10)
+
+        if not (ok1 and ok2 and ok3 and ok4 and ok5 and ok6 and ok7):
+            return  # Αν κάποιος από τους χρήστες δεν έχει εισάγει τα δεδομένα ή ακύρωσε, επιστρέφουμε
+
+        # Εκτύπωση των δεδομένων πριν την εισαγωγή (για έλεγχο)
+        print(f"Μητρώο Μέλους: {new_member_id}")
+        print(f"Όνομα: {name}")
+        print(f"Επώνυμο: {surname}")
+        print(f"Ημερομηνία Γέννησης: {birth_date}")
+        print(f"Επίπεδο: {level}")
+        print(f"Τηλέφωνο: {phone}")
+        print(f"Φύλο: {gender}")
+        print(f"Πλήθος Αδελφών: {siblings}")
+
+        # Ανοίγουμε τη σύνδεση στη βάση δεδομένων και εισάγουμε τα δεδομένα
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                INSERT INTO ΜΕΛΟΣ (μητρώο_μέλους, όνομα, επώνυμο, ημερομηνία_γέννησης, επίπεδο, τηλέφωνο, φύλο, πλήθος_αδελφών)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                new_member_id,
+                name,
+                surname,
+                birth_date,
+                level,
+                phone,
+                gender,
+                siblings
+            ))
+            conn.commit()
+            conn.close()
+            
+            # Εμφάνιση μηνύματος επιτυχίας
+            QMessageBox.information(self, "Επιτυχία", f"Το μέλος με μητρώο {new_member_id} προστέθηκε επιτυχώς.")
+        except sqlite3.IntegrityError as e:
+            print(f"Σφάλμα κατά την εισαγωγή στην βάση: {e}")
+            QMessageBox.warning(self, "Σφάλμα", f"Σφάλμα στην προσθήκη μέλους: {e}")
 
     def delete_member(self, row):
         member_id = self.table.item(row, 0).text()
@@ -81,7 +176,7 @@ class MyApp(QDialog):
         elif column_index == 3:  # Επίπεδο
             valid_levels = ['ΑΡΧΑΡΙΟΣ', 'ΕΡΑΣΙΤΕΧΝΗΣ', 'ΠΡΟΧΩΡΗΜΕΝΟΣ', 'ΕΠΑΓΓΕΛΜΑΤΙΑΣ']
             if new_value not in valid_levels:
-                QMessageBox.warning(self, "Σφάλμα", "Μη έγκυρο επίπεδο.")
+                QMessageBox.warning(self, "Σφάλμα", "Μη έγκυρο επίπεδο. Πληκτρολογήστε 'ΑΡΧΑΡΙΟΣ' ή 'ΕΡΑΣΙΤΕΧΝΗΣ' ή 'ΠΡΟΧΩΡΗΜΕΝΟΣ' ή 'ΕΠΑΓΓΕΛΜΑΤΙΑΣ'.")
                 return
 
         elif column_index == 4:  # Τηλέφωνο
@@ -92,7 +187,7 @@ class MyApp(QDialog):
         elif column_index == 5:  # Φύλο
             valid_genders = ['ΑΡΡΕΝ', 'ΘΗΛΥ']
             if new_value not in valid_genders:
-                QMessageBox.warning(self, "Σφάλμα", "Μη έγκυρο φύλο.")
+                QMessageBox.warning(self, "Σφάλμα", "Μη έγκυρο φύλο. Πληκτρολογήστε 'ΑΡΡΕΝ' ή 'ΘΗΛΥ'.")
                 return
 
         elif column_index == 6:  # Πλήθος Αδερφών
