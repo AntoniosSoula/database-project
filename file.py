@@ -1,3 +1,15 @@
+Η συνομιλία άνοιξε. 1 μη αναγνωσμένο μήνυμα.
+
+Μετάβαση απευθείας στο περιεχόμενο
+Χρήση του Gmail με αναγνώστες οθόνης
+1 από 267
+(κανένα θέμα)
+Εισερχόμενα
+
+ΓΙΩΤΑ ΣΜΠΙΛΙΡΗ
+4:47 μ.μ. (πριν από 0 λεπτά)
+προς εγώ
+
 import sys
 from PyQt6.QtWidgets import (
     QApplication, QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout, 
@@ -155,29 +167,9 @@ class MyApp(QDialog):
         1, 1, len(column_names)
         )[0] - 1  # Γυρίζει σε zero-based index
 
-    if column_index is None:
-        return
-
-    new_value = None
-    if column_names[column_index] == "Ημερομηνία Γέννησης":
-        date_dialog = QDialog(self)
-        date_dialog.setWindowTitle("Επιλογή Ημερομηνίας")
-        layout = QVBoxLayout(date_dialog)
-
-        date_edit = QDateEdit()
-        date_edit.setCalendarPopup(True)
-        date_edit.setDate(QDate.currentDate())
-        layout.addWidget(date_edit)
-
-        confirm_button = QPushButton("OK")
-        confirm_button.clicked.connect(date_dialog.accept)
-        layout.addWidget(confirm_button)
-
-        if date_dialog.exec() == QDialog.DialogCode.Accepted:
-            new_value = date_edit.date().toString("yyyy-MM-dd")
-        else:
+        if column_index is None:
             return
-    else:
+
         new_value, ok = QInputDialog.getText(
             self, "Νέα Τιμή", f"Εισάγετε νέα τιμή για {column_names[column_index]}:")
         if not ok or not new_value:
@@ -290,3 +282,4 @@ if __name__ == "__main__":
     window = MyApp()
     window.show()
     sys.exit(app.exec())
+
