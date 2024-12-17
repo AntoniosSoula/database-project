@@ -32,7 +32,11 @@ class MyApp(QDialog):
             layout = QVBoxLayout()
             self.tabWidget.widget(self.tabWidget.indexOf(self.tabMeli)).setLayout(layout)
         
-        layout.addWidget(self.addButton)  # Προσθήκη του κουμπιού στο layout
+        # Κρύβουμε το κουμπί "Προσθήκη Μέλους" αρχικά
+        self.addButton.setVisible(False)
+
+        # Προσθέτουμε το κουμπί "Επιστροφή" στο layout
+        layout.addWidget(self.backButton)  # Προσθήκη του κουμπιού επιστροφήςgit 
     def get_next_member_id(self):
         conn = sqlite3.connect('database.db')
         cursor = conn.cursor()
@@ -251,6 +255,7 @@ class MyApp(QDialog):
                 widget.setLayout(layout)
             layout.addWidget(self.table)
             layout.addWidget(self.backButton)
+            layout.addWidget(self.addButton)
             self.table_shown = True
 
     def go_back(self):
@@ -260,7 +265,11 @@ class MyApp(QDialog):
             layout = self.tabWidget.widget(self.tabWidget.indexOf(self.tabMeli)).layout()
             if layout:
                 layout.removeWidget(self.backButton)
+                
                 self.backButton.setParent(None)
+                layout.removeWidget(self.addButton)
+                
+                self.addButton.setParent(None)
             self.buttonTableMeli.setEnabled(True)
             print("Επιστροφή στην αρχική κατάσταση του tab.")
 
