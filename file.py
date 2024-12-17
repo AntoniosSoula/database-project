@@ -49,18 +49,16 @@ class MyApp(QDialog):
 
     def update_member(self, row):
     # Επιλέγουμε τον αριθμό μητρώου και ζητάμε νέα δεδομένα για ενημέρωση
-    member_id = self.table.item(row, 0).text()
-
-    column_names = [
+        member_id = self.table.item(row, 0).text()
+        column_names = [
         "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", "Επίπεδο", 
         "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών"
-    ]
-
-    column_index = QInputDialog.getInt(
+        ]
+        column_index = QInputDialog.getInt(
         self, "Επιλογή Πεδίου", "Διάλεξε στήλη για ενημέρωση (1-7):\n" +
         "\n".join([f"{i+1}. {name}" for i, name in enumerate(column_names)]),
         1, 1, len(column_names)
-    )[0] - 1  # Γυρίζει σε zero-based index
+        )[0] - 1  # Γυρίζει σε zero-based index
 
     if column_index is None:
         return
@@ -86,30 +84,56 @@ class MyApp(QDialog):
             return
     else:
         new_value, ok = QInputDialog.getText(
-            self, "Νέα Τιμή", f"Εισάγετε νέα τιμή για {column_names[column_index]}:"
-        )
+            self, "Νέα Τιμή", f"Εισάγετε νέα τιμή για {column_names[column_index]}:")
         if not ok or not new_value:
             return
 
-    try:
+    # Ελέγχοι για τους περιορισμούς
+        if column_index == 2:  # Ημερομηνία Γέννησης
+            try:
+                QDate.fromString(new_value, "yyyy-MM-dd")
+                if QDate.fromString(new_value, "yyyy-MM-dd") > QDate.currentDate():
+                    raise ValueError("Η ημερομηνία γέννησης δεν μπορεί να είναι στο μέλλον.")
+            except Exception as e:
+                QMessageBox.warning(self, "Σφάλμα", f"Μη έγκυρη ημερομηνία γέννησης: {e}")
+                return
+
+        elif column_index == 3:  # Επίπεδο
+            valid_levels = ['ΑΡΧΑΡΙΟΣ', 'ΕΡΑΣΙΤΕΧΝΗΣ', 'ΠΡΟΧΩΡΗΜΕΝΟΣ', 'ΕΠΑΓΓΕΛΜΑΤΙΑΣ']
+            if new_value not in valid_levels:
+                QMessageBox.warning(self, "Σφάλμα", "Μη έγκυρο επίπεδο.")
+                return
+
+        elif column_index == 4:  # Τηλέφωνο
+            if len(new_value) != 10 or not new_value.isdigit():
+                QMessageBox.warning(self, "Σφάλμα", "Μη έγκυρο τηλέφωνο. Πρέπει να είναι 10 ψηφία.")
+                return
+
+        elif column_index == 5:  # Φύλο
+            valid_genders = ['ΑΡΡΕΝ', 'ΘΗΛΥ']
+            if new_value not in valid_genders:
+                QMessageBox.warning(self, "Σφάλμα", "Μη έγκυρο φύλο.")
+                return
+
+        elif column_index == 6:  # Πλήθος Αδερφών
+            if not new_value.isdigit() or int(new_value) < 0:
+                QMessageBox.warning(self, "Σφάλμα", "Μη έγκυρος αριθμός αδελφών.")
+                return
+
+    # Ενημέρωση της βάσης δεδομένων
+        columns_db = ["επώνυμο", "όνομα", "ημερομηνία_γέννησης", "επίπεδο", 
+                  "τηλέφωνο", "φύλο", "πλήθος_αδελφών"]
         conn = sqlite3.connect('database.db')
         cursor = conn.cursor()
-
-        columns_db = ["επώνυμο", "όνομα", "ημερομηνία_γέννησης", "επίπεδο", 
-                      "τηλέφωνο", "φύλο", "πλήθος_αδελφών"]
-
         cursor.execute(
-            f"UPDATE ΜΕΛΟΣ SET {columns_db[column_index]} = ? WHERE μητρώο_μέλους = ?",
-            (new_value, member_id)
-        )
+        f"UPDATE ΜΕΛΟΣ SET {columns_db[column_index]} = ? WHERE μητρώο_μέλους = ?",
+        (new_value, member_id))
         conn.commit()
         conn.close()
 
+    # Ενημέρωση του πίνακα στην εφαρμογή
         self.table.setItem(row, column_index + 1, QTableWidgetItem(new_value))
         print(f"Το μέλος με μητρώο {member_id} ενημερώθηκε.")
-
-    except Exception as e:
-        print(f"Σφάλμα: {e}")
 
 
     def show_table(self):
