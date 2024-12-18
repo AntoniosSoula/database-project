@@ -11,7 +11,17 @@ class Melos:
         self.parent = parent
         self.table = None
         self.table_shown = False
-
+        self.Buttonstylesheet = self.load_stylesheet("Buttonstyle.txt")
+        self.backButton = QPushButton("Επιστροφή")
+        self.backButton.setStyleSheet(self.Buttonstylesheet)
+        self.backButton.clicked.connect(self.go_back)
+    def load_stylesheet(self, style):
+        try:
+            with open(style, "r") as f:
+                return f.read()
+        except Exception as e:
+            print(f"Error loading stylesheet: {e}")
+            return None
     def show_table(self):
         if self.table_shown:
             self.table.setParent(None)
@@ -30,6 +40,7 @@ class Melos:
                 ["Μητρώο Μέλους", "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", 
                  "Επίπεδο", "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών", "Διαγραφή", "Ενημέρωση"]
             )
+
             for row, row_data in enumerate(rows):
                 for column, value in enumerate(row_data):
                     self.table.setItem(row, column, QTableWidgetItem(str(value)))
@@ -37,6 +48,7 @@ class Melos:
                 # Δημιουργία κουμπιού για Διαγραφή και Ενημέρωση για κάθε γραμμή
                 delete_button = QPushButton("Διαγραφή")
                 update_button = QPushButton("Ενημέρωση")
+                # Set the style from the loaded stylesheet
 
                 # Σύνδεση των κουμπιών με τις αντίστοιχες μεθόδους
                 delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
@@ -46,12 +58,66 @@ class Melos:
                 self.table.setCellWidget(row, 9, update_button)  # Ενημέρωση στην στήλη 9
 
             # Προσθήκη του πίνακα στο tabMeli
-            layout = self.parent.tabMeli.layout() if self.parent.tabMeli.layout() else QVBoxLayout()
+        layout = self.parent.tabMeli.layout()
+        if layout is None:
+            layout = QVBoxLayout()
             self.parent.tabMeli.setLayout(layout)
-            layout.addWidget(self.table)
 
-            self.table_shown = True
+        layout.addWidget(self.table)
+        layout.addWidget(self.backButton)
+        self.table_shown = True
+        self.addButton = QPushButton("Προσθήκη Μέλους")
+        self.addButton.setStyleSheet(self.Buttonstylesheet)
+        self.addButton.clicked.connect(self.add_member)
+        layout.addWidget(self.addButton)
 
+# Modify the add_member method like this:
+    def add_member(self):
+        # Λήψη του επόμενου μητρώου
+        new_member_id = self.get_next_member_id()
+
+        # Αναζήτηση στοιχείων του μέλους από τον χρήστη
+        name, ok1 = QInputDialog.getText(self.parent, "Όνομα", "Εισάγετε το όνομα του μέλους:")  # Use self.parent here
+        surname, ok2 = QInputDialog.getText(self.parent, "Επώνυμο", "Εισάγετε το επώνυμο του μέλους:")  # Use self.parent here
+
+        if not ok1 or not ok2:  # Αν δεν επιβεβαιώσει τα δεδομένα, επιστρέφουμε
+            return
+
+        birth_date, ok3 = QInputDialog.getText(self.parent, "Ημερομηνία Γέννησης", "Εισάγετε την ημερομηνία γέννησης (yyyy-MM-dd):")  # Use self.parent here
+        level, ok4 = QInputDialog.getItem(self.parent, "Επίπεδο", "Επιλέξτε το επίπεδο του μέλους:", ["ΑΡΧΑΡΙΟΣ", "ΕΡΑΣΙΤΕΧΝΗΣ", "ΠΡΟΧΩΡΗΜΕΝΟΣ", "ΕΠΑΓΓΕΛΜΑΤΙΑΣ"], 0, False)  # Use self.parent here
+        phone, ok5 = QInputDialog.getText(self.parent, "Τηλέφωνο", "Εισάγετε το τηλέφωνο του μέλους:")  # Use self.parent here
+        gender, ok6 = QInputDialog.getItem(self.parent, "Φύλο", "Επιλέξτε το φύλο του μέλους:", ["ΑΡΡΕΝ", "ΘΗΛΥ"], 0, False)  # Use self.parent here
+        siblings, ok7 = QInputDialog.getInt(self.parent, "Πλήθος Αδελφών", "Εισάγετε τον αριθμό αδελφών του μέλους:", 0, 0, 10)  # Use self.parent here
+
+        if not (ok1 and ok2 and ok3 and ok4 and ok5 and ok6 and ok7):
+            return  # Αν κάποιος από τους χρήστες δεν έχει εισάγει τα δεδομένα ή ακύρωσε, επιστρέφουμε
+
+        # Ανοίγουμε τη σύνδεση στη βάση δεδομένων και εισάγουμε τα δεδομένα
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                INSERT INTO ΜΕΛΟΣ (μητρώο_μέλους, όνομα, επώνυμο, ημερομηνία_γέννησης, επίπεδο, τηλέφωνο, φύλο, πλήθος_αδελφών)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                new_member_id,
+                name,
+                surname,
+                birth_date,
+                level,
+                phone,
+                gender,
+                siblings
+            ))
+            conn.commit()
+            conn.close()
+
+            # Εμφάνιση μηνύματος επιτυχίας
+            QMessageBox.information(self.parent, "Επιτυχία", f"Το μέλος με μητρώο {new_member_id} προστέθηκε επιτυχώς.")
+        except sqlite3.IntegrityError as e:
+            print(f"Σφάλμα κατά την εισαγωγή στην βάση: {e}")
+            QMessageBox.warning(self.parent, "Σφάλμα", f"Σφάλμα στην προσθήκη μέλους: {e}")
 
     def delete_member(self, row):
         item = self.table.item(row, 0)
@@ -171,6 +237,20 @@ class Melos:
         last_id = int(result[0])
         next_id = last_id + 1
         return str(next_id).zfill(4)  # Επιστρέφουμε το επόμενο μητρώο με 4 ψηφία
+    def go_back(self):
+        if self.table_shown:
+            self.table.setParent(None)
+            self.addButton.setParent(None)
+            self.table_shown = False
+            
+            # Access 'tabWidget' from the parent (Main class)
+            layout = self.parent.tabWidget.widget(self.parent.tabWidget.indexOf(self.parent.tabMeli)).layout()
+            if layout:
+                layout.removeWidget(self.backButton)
+                self.backButton.setParent(None)
+            
+            # Enable the button again
+            self.parent.buttonTableMeli.setEnabled(True)
 
 class Main(QDialog):
     def __init__(self):
@@ -180,6 +260,7 @@ class Main(QDialog):
 
         # Συνδέουμε το κουμπί με την μέθοδο
         self.buttonTableMeli.clicked.connect(self.show_member_table)
+
 
     def show_member_table(self):
         # Δημιουργία του στιγμιότυπου της κλάσης Meli όταν πατηθεί το κουμπί

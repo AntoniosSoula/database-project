@@ -52,9 +52,9 @@
        <colorrole role="Button">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>63</red>
-          <green>91</green>
-          <blue>93</blue>
+          <red>118</red>
+          <green>171</green>
+          <blue>174</blue>
          </color>
         </brush>
        </colorrole>
@@ -124,18 +124,18 @@
        <colorrole role="Base">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>0</red>
-          <green>0</green>
-          <blue>0</blue>
+          <red>118</red>
+          <green>171</green>
+          <blue>174</blue>
          </color>
         </brush>
        </colorrole>
        <colorrole role="Window">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>63</red>
-          <green>91</green>
-          <blue>93</blue>
+          <red>118</red>
+          <green>171</green>
+          <blue>174</blue>
          </color>
         </brush>
        </colorrole>
@@ -189,9 +189,9 @@
        <colorrole role="Button">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>63</red>
-          <green>91</green>
-          <blue>93</blue>
+          <red>118</red>
+          <green>171</green>
+          <blue>174</blue>
          </color>
         </brush>
        </colorrole>
@@ -261,18 +261,18 @@
        <colorrole role="Base">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>0</red>
-          <green>0</green>
-          <blue>0</blue>
+          <red>118</red>
+          <green>171</green>
+          <blue>174</blue>
          </color>
         </brush>
        </colorrole>
        <colorrole role="Window">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>63</red>
-          <green>91</green>
-          <blue>93</blue>
+          <red>118</red>
+          <green>171</green>
+          <blue>174</blue>
          </color>
         </brush>
        </colorrole>
@@ -326,9 +326,9 @@
        <colorrole role="Button">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>63</red>
-          <green>91</green>
-          <blue>93</blue>
+          <red>118</red>
+          <green>171</green>
+          <blue>174</blue>
          </color>
         </brush>
        </colorrole>
@@ -398,18 +398,18 @@
        <colorrole role="Base">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>63</red>
-          <green>91</green>
-          <blue>93</blue>
+          <red>118</red>
+          <green>171</green>
+          <blue>174</blue>
          </color>
         </brush>
        </colorrole>
        <colorrole role="Window">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>63</red>
-          <green>91</green>
-          <blue>93</blue>
+          <red>118</red>
+          <green>171</green>
+          <blue>174</blue>
          </color>
         </brush>
        </colorrole>
@@ -475,7 +475,7 @@ QTabBar::tab:selected {
 </string>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tabMeli">
      <attribute name="title">
@@ -700,11 +700,6 @@ QTabBar::tab:selected {
        <string>Πίνακας Ξένων Παικτών</string>
       </property>
      </widget>
-    </widget>
-    <widget class="QWidget" name="tab_2">
-     <attribute name="title">
-      <string>Παίκτες</string>
-     </attribute>
     </widget>
     <widget class="QWidget" name="tab_3">
      <attribute name="title">

@@ -164,23 +164,12 @@ class MyApp(QDialog):
             layout.addWidget(self.backButton)
             self.table_shown = True
 
-            # Εύρεση του layout του tab "Πίνακας Μελών"
-            tab_index = self.tabWidget.indexOf(self.tabMeli)
-            widget = self.tabWidget.widget(tab_index)
-            layout = widget.layout()
-            if layout is None:
-                layout = QVBoxLayout()
-                widget.setLayout(layout)
 
-            # Προσθήκη του πίνακα και του κουμπιού "Προσθήκη Μέλους"
-            layout.addWidget(self.table)
             self.addButton = QPushButton("Προσθήκη Μέλους")
             self.addButton.setStyleSheet(self.Buttonstylesheet)
             self.addButton.clicked.connect(self.add_member)
             layout.addWidget(self.addButton)
 
-            layout.addWidget(self.backButton)
-            self.table_shown = True
     def update_member(self, row):
     # Επιλέγουμε τον αριθμό μητρώου και ζητάμε νέα δεδομένα για ενημέρωση
         member_id = self.table.item(row, 0).text()
