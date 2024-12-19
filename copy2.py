@@ -7,16 +7,15 @@ from PyQt6.QtCore import QDate
 
 # Κλάση για τη διαχείριση των μελών
 class Melos:
-    table_name='ΜΕΛΟΣ'
     def __init__(self, parent):
         self.parent = parent
         self.table = None
+        self.table_name='ΜΕΛΟΣ'
         self.table_shown = False
         self.Buttonstylesheet = self.load_stylesheet("Buttonstyle.txt")
         self.backButton = QPushButton("Επιστροφή")
         self.backButton.setStyleSheet(self.Buttonstylesheet)
         self.backButton.clicked.connect(self.go_back)
-
     def load_stylesheet(self, style):
         try:
             with open(style, "r") as f:
