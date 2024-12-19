@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout, QPushButton, QMessageBox,QInputDialog
+from PyQt6.QtWidgets import QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout, QPushButton, QMessageBox, QInputDialog
 from PyQt6.uic import loadUi
 import sqlite3
 from PyQt6.QtCore import QDate
@@ -65,7 +65,58 @@ class TeamPaiktis(Melos):
             layout.addWidget(self.table)
             layout.addWidget(self.backButton)
             self.table_shown = True
-            self.addButton = QPushButton("Προσθήκη Μέλους")
+            self.addButton = QPushButton("Προσθήκη Παίκτη της Ομάδας")
             self.addButton.setStyleSheet(self.Buttonstylesheet)
-        #self.addButton.clicked.connect(self.add_member)
+            self.addButton.clicked.connect(self.add_member)
             layout.addWidget(self.addButton)
+    def add_member(self):
+        # Βήμα 1: Ζητάμε από τον χρήστη να εισάγει το "μητρώο μέλους"
+        member_id, ok = QInputDialog.getText(self, "Εισαγωγή Μητρώου Μέλους", "Δώστε το μητρώο μέλους:")
+
+        if not ok or not member_id:
+            QMessageBox.warning(self, "Σφάλμα", "Πρέπει να εισάγετε το μητρώο μέλους.")
+            return
+        
+        # Βήμα 2: Έλεγχος αν το μέλος υπάρχει στον πίνακα "ΞΕΝΟΣ ΠΑΙΚΤΗΣ" ή "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+
+        # Έλεγχος στον πίνακα "ΞΕΝΟΣ ΠΑΙΚΤΗΣ"
+        cursor.execute("""
+        SELECT * FROM "ΞΕΝΟΣ ΠΑΙΚΤΗΣ" WHERE "μητρώο_μέλους" = ?
+        """, (member_id,))
+        foreign_player_exists = cursor.fetchone()
+
+        # Έλεγχος στον πίνακα "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"
+        cursor.execute("""
+        SELECT * FROM "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ" WHERE "μητρώο_μέλους" = ?
+        """, (member_id,))
+        team_player_exists = cursor.fetchone()
+
+        if foreign_player_exists or team_player_exists:
+            QMessageBox.warning(self, "Ειδοποίηση", "Αυτό το μέλος υπάρχει ήδη στην ομάδα ή στον πίνακα ξένων παικτών.")
+            conn.close()
+            return
+
+        # Βήμα 3: Αν το μέλος δεν υπάρχει, ζητάμε το νέο RN
+        new_rn, ok = QInputDialog.getText(self, "Καταχώρηση RN", "Δώστε νέο RN (5 χαρακτήρες):")
+        if not ok or len(new_rn) != 5:
+            QMessageBox.warning(self, "Σφάλμα", "Το RN πρέπει να έχει 5 χαρακτήρες.")
+            conn.close()
+            return
+
+        # Βήμα 4: Εισαγωγή του μέλους στους πίνακες "ΠΑΙΚΤΗΣ" και "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"
+        cursor.execute("""
+        INSERT INTO "ΠΑΙΚΤΗΣ" ("RN", "μητρώο_μέλους") VALUES (?, ?)
+        """, (new_rn, member_id))
+
+        cursor.execute("""
+        INSERT INTO "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ" ("RN", "μητρώο_μέλους", "ήττες", "νίκες", "points", "κατηγορία")
+        VALUES (?, ?, 0, 0, 0, ?)
+        """, (new_rn, member_id, 'ΑΡΧΑΡΙΟΣ'))  # Default category can be 'ΑΡΧΑΡΙΟΣ'
+
+        conn.commit()
+        conn.close()
+
+        # Βήμα 5: Ενημέρωση του χρήστη
+        QMessageBox.information(self, "Επιτυχία", "Ο παίκτης προστέθηκε στην ομάδα.")
