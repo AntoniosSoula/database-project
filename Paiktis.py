@@ -70,53 +70,67 @@ class TeamPaiktis(Melos):
             self.addButton.clicked.connect(self.add_member)
             layout.addWidget(self.addButton)
     def add_member(self):
-        # Βήμα 1: Ζητάμε από τον χρήστη να εισάγει το "μητρώο μέλους"
-        member_id, ok = QInputDialog.getText(self, "Εισαγωγή Μητρώου Μέλους", "Δώστε το μητρώο μέλους:")
+        # Ζήτα από τον χρήστη το μητρώο μέλους
+        μητρώο_μέλους, ok1 = QInputDialog.getText(self.parent, "Εισαγωγή Μητρώου Μέλους", "Μητρώο Μέλους:")
 
-        if not ok or not member_id:
-            QMessageBox.warning(self, "Σφάλμα", "Πρέπει να εισάγετε το μητρώο μέλους.")
+        if not ok1:
+            QMessageBox.warning(self.parent, "Σφάλμα", "Πρέπει να εισάγεις δεδομένα.")
             return
-        
-        # Βήμα 2: Έλεγχος αν το μέλος υπάρχει στον πίνακα "ΞΕΝΟΣ ΠΑΙΚΤΗΣ" ή "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"
+
         conn = sqlite3.connect('database.db')
         cursor = conn.cursor()
 
-        # Έλεγχος στον πίνακα "ΞΕΝΟΣ ΠΑΙΚΤΗΣ"
+        # Έλεγχος αν υπάρχει το μητρώο_μέλους στον πίνακα "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"
         cursor.execute("""
-        SELECT * FROM "ΞΕΝΟΣ ΠΑΙΚΤΗΣ" WHERE "μητρώο_μέλους" = ?
-        """, (member_id,))
-        foreign_player_exists = cursor.fetchone()
-
-        # Έλεγχος στον πίνακα "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"
-        cursor.execute("""
-        SELECT * FROM "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ" WHERE "μητρώο_μέλους" = ?
-        """, (member_id,))
-        team_player_exists = cursor.fetchone()
-
-        if foreign_player_exists or team_player_exists:
-            QMessageBox.warning(self, "Ειδοποίηση", "Αυτό το μέλος υπάρχει ήδη στην ομάδα ή στον πίνακα ξένων παικτών.")
+            SELECT * FROM "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"
+            WHERE "μητρώο_μέλους" = ?
+        """, (μητρώο_μέλους,))
+        result = cursor.fetchone()
+        
+        if result:
+            QMessageBox.warning(self.parent, "Σφάλμα", "Ο παίκτης υπάρχει ήδη στην ομάδα.")
             conn.close()
             return
 
-        # Βήμα 3: Αν το μέλος δεν υπάρχει, ζητάμε το νέο RN
-        new_rn, ok = QInputDialog.getText(self, "Καταχώρηση RN", "Δώστε νέο RN (5 χαρακτήρες):")
-        if not ok or len(new_rn) != 5:
-            QMessageBox.warning(self, "Σφάλμα", "Το RN πρέπει να έχει 5 χαρακτήρες.")
+        # Έλεγχος αν υπάρχει το μητρώο_μέλους στον πίνακα "ΞΕΝΟΣ ΠΑΙΚΤΗΣ"
+        cursor.execute("""
+            SELECT * FROM "ΞΕΝΟΣ ΠΑΙΚΤΗΣ"
+            WHERE "μητρώο_μέλους" = ?
+        """, (μητρώο_μέλους,))
+        result = cursor.fetchone()
+        
+        if result:
+            QMessageBox.warning(self.parent, "Σφάλμα", "Ο παίκτης είναι ξένος και δεν μπορεί να προστεθεί.")
             conn.close()
             return
 
-        # Βήμα 4: Εισαγωγή του μέλους στους πίνακες "ΠΑΙΚΤΗΣ" και "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"
-        cursor.execute("""
-        INSERT INTO "ΠΑΙΚΤΗΣ" ("RN", "μητρώο_μέλους") VALUES (?, ?)
-        """, (new_rn, member_id))
+        # Αν δεν βρέθηκε σε κανέναν από τους πίνακες, ζητείται το RN
+        RN, ok2 = QInputDialog.getText(self.parent, "Εισαγωγή RN", "RN:")
 
-        cursor.execute("""
-        INSERT INTO "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ" ("RN", "μητρώο_μέλους", "ήττες", "νίκες", "points", "κατηγορία")
-        VALUES (?, ?, 0, 0, 0, ?)
-        """, (new_rn, member_id, 'ΑΡΧΑΡΙΟΣ'))  # Default category can be 'ΑΡΧΑΡΙΟΣ'
+        if not ok2:
+            QMessageBox.warning(self.parent, "Σφάλμα", "Πρέπει να εισάγεις το RN.")
+            conn.close()
+            return
 
-        conn.commit()
-        conn.close()
+        try:
+            # Εισαγωγή στον πίνακα "ΠΑΙΚΤΗΣ"
+            cursor.execute("""
+                INSERT INTO "ΠΑΙΚΤΗΣ" ("RN", "μητρώο_μέλους")
+                VALUES (?, ?)
+            """, (RN, μητρώο_μέλους))
 
-        # Βήμα 5: Ενημέρωση του χρήστη
-        QMessageBox.information(self, "Επιτυχία", "Ο παίκτης προστέθηκε στην ομάδα.")
+            # Εισαγωγή στον πίνακα "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ" με αρχικές τιμές για ήττες, νίκες και points
+            cursor.execute("""
+                INSERT INTO "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ" ("RN", "μητρώο_μέλους", "ήττες", "νίκες", "points")
+                VALUES (?, ?, 0, 0, 0)
+            """, (RN, μητρώο_μέλους))
+
+            conn.commit()  # Επιβεβαίωση αλλαγών στη βάση
+            QMessageBox.information(self.parent, "Επιτυχία", "Ο παίκτης προστέθηκε στην ομάδα.")
+            self.show_table()
+
+        except sqlite3.Error as e:
+            QMessageBox.critical(self.parent, "Σφάλμα", f"Παρουσιάστηκε σφάλμα κατά την εισαγωγή του παίκτη: {e}")
+        
+        finally:
+            conn.close()
