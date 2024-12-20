@@ -26,40 +26,44 @@ class Melos:
             return None
     def show_table(self):
         if self.table_shown:
-            self.table.setParent(None)
+            self.table.setParent(None)  # Αφαιρούμε τον πίνακα αν έχει εμφανιστεί ήδη
             self.table_shown = False
-        else:
-            self.table = QTableWidget()
-            conn = sqlite3.connect('database.db')
-            cursor = conn.cursor()
-            cursor.execute(f"SELECT * FROM {self.table_name}")
-            rows = cursor.fetchall()
-            conn.close()
 
-            self.table.setRowCount(len(rows))
-            self.table.setColumnCount(10)  # Προσθήκη στήλης ενημέρωσης
-            self.table.setHorizontalHeaderLabels(
-                ["Μητρώο Μέλους", "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", 
-                 "Επίπεδο", "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών", "Διαγραφή", "Ενημέρωση"]
-            )
+        # Δημιουργούμε έναν νέο πίνακα
+        self.table = QTableWidget()
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA foreign_keys = ON;")
+        cursor.execute(f"SELECT * FROM {self.table_name}")
+        rows = cursor.fetchall()
+        conn.close()
 
-            for row, row_data in enumerate(rows):
-                for column, value in enumerate(row_data):
-                    self.table.setItem(row, column, QTableWidgetItem(str(value)))
-                
-                # Δημιουργία κουμπιού για Διαγραφή και Ενημέρωση για κάθε γραμμή
-                delete_button = QPushButton("Διαγραφή")
-                update_button = QPushButton("Ενημέρωση")
-                # Set the style from the loaded stylesheet
+        # Ρυθμίσεις του πίνακα
+        self.table.setRowCount(len(rows))
+        self.table.setColumnCount(10)  # 10 στήλες (συμπεριλαμβανομένων Διαγραφή και Ενημέρωση)
+        self.table.setHorizontalHeaderLabels(
+            ["Μητρώο Μέλους", "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", 
+            "Επίπεδο", "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών", "Διαγραφή", "Ενημέρωση"]
+        )
 
-                # Σύνδεση των κουμπιών με τις αντίστοιχες μεθόδους
-                delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
-                update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
+        # Γεμίζουμε τον πίνακα με δεδομένα
+        for row, row_data in enumerate(rows):
+            for column, value in enumerate(row_data):
+                self.table.setItem(row, column, QTableWidgetItem(str(value)))
 
-                self.table.setCellWidget(row, 8, delete_button)  # Διαγραφή στην στήλη 8
-                self.table.setCellWidget(row, 9, update_button)  # Ενημέρωση στην στήλη 9
+            # Δημιουργία κουμπιού για Διαγραφή και Ενημέρωση για κάθε γραμμή
+            delete_button = QPushButton("Διαγραφή")
+            update_button = QPushButton("Ενημέρωση")
 
-            # Προσθήκη του πίνακα στο tabMeli
+            # Σύνδεση των κουμπιών με τις αντίστοιχες μεθόδους
+            delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
+            update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
+
+            # Προσθήκη κουμπιών στον πίνακα
+            self.table.setCellWidget(row, 8, delete_button)  # Διαγραφή στην στήλη 8
+            self.table.setCellWidget(row, 9, update_button)  # Ενημέρωση στην στήλη 9
+
+        # Προσθήκη του πίνακα στο tabMeli μόνο αν δεν έχει ήδη προστεθεί
         layout = self.parent.tabMeli.layout()
         if layout is None:
             layout = QVBoxLayout()
@@ -68,12 +72,13 @@ class Melos:
         layout.addWidget(self.table)
         layout.addWidget(self.backButton)
         self.table_shown = True
+
+        # Δημιουργία και σύνδεση του κουμπιού για προσθήκη νέου μέλους
         self.addButton = QPushButton("Προσθήκη Μέλους")
         self.addButton.setStyleSheet(self.Buttonstylesheet)
         self.addButton.clicked.connect(self.add_member)
         layout.addWidget(self.addButton)
 
-# Modify the add_member method like this:
     def add_member(self):
         # Λήψη του επόμενου μητρώου
         new_member_id = self.get_next_member_id()
@@ -97,7 +102,6 @@ class Melos:
         # Ανοίγουμε τη σύνδεση στη βάση δεδομένων και εισάγουμε τα δεδομένα
         conn = sqlite3.connect('database.db')
         cursor = conn.cursor()
-
         try:
             cursor.execute(f"""
                 INSERT INTO {self.table_name} (μητρώο_μέλους, όνομα, επώνυμο, ημερομηνία_γέννησης, επίπεδο, τηλέφωνο, φύλο, πλήθος_αδελφών)
@@ -117,6 +121,28 @@ class Melos:
 
             # Εμφάνιση μηνύματος επιτυχίας
             QMessageBox.information(self.parent, "Επιτυχία", f"Το μέλος με μητρώο {new_member_id} προστέθηκε επιτυχώς.")
+            row = self.table.rowCount()  # Λήψη του τρέχοντος αριθμού γραμμών
+            self.table.insertRow(row)  # Προσθήκη νέας γραμμής
+
+            # Ρύθμιση των κελιών με τα νέα δεδομένα
+            self.table.setItem(row, 0, QTableWidgetItem(new_member_id))
+            self.table.setItem(row, 1, QTableWidgetItem(surname))
+            self.table.setItem(row, 2, QTableWidgetItem(name))
+            self.table.setItem(row, 3, QTableWidgetItem(birth_date))
+            self.table.setItem(row, 4, QTableWidgetItem(level))
+            self.table.setItem(row, 5, QTableWidgetItem(phone))
+            self.table.setItem(row, 6, QTableWidgetItem(gender))
+            self.table.setItem(row, 7, QTableWidgetItem(str(siblings)))
+            
+            delete_button = QPushButton("Διαγραφή")
+            update_button = QPushButton("Ενημέρωση")
+
+            # Σύνδεση κουμπιών με τις αντίστοιχες μεθόδους
+            delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
+            update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
+
+            self.table.setCellWidget(row, 8, delete_button)  # Διαγραφή στην στήλη 8
+            self.table.setCellWidget(row, 9, update_button)  # Ενημέρωση στην στήλη 9
         except sqlite3.IntegrityError as e:
             print(f"Σφάλμα κατά την εισαγωγή στην βάση: {e}")
             QMessageBox.warning(self.parent, "Σφάλμα", f"Σφάλμα στην προσθήκη μέλους: {e}")
