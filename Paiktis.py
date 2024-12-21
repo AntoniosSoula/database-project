@@ -21,25 +21,26 @@ class TeamPaiktis(Melos):
             cursor = conn.cursor()
             cursor.execute("PRAGMA foreign_keys = ON;")
             query = f"""
-                    SELECT 
-                        "ΜΕΛΟΣ"."όνομα", 
-                        "ΜΕΛΟΣ"."επώνυμο", 
-                        "ΜΕΛΟΣ"."ημερομηνία_γέννησης", 
-                        "ΜΕΛΟΣ"."επίπεδο", 
-                        "ΜΕΛΟΣ"."τηλέφωνο", 
-                        "ΜΕΛΟΣ"."φύλο", 
-                        "ΜΕΛΟΣ"."πλήθος_αδελφών",
-                        "ΠΑΙΚΤΗΣ"."RN", 
-                        "ΠΑΙΚΤΗΣ"."Δελτίο_ΑΘλητή", 
-                        "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"."ήττες", 
-                        "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"."νίκες", 
-                        "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"."points", 
-                        "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"."κατηγορία"
-                    FROM "ΠΑΙΚΤΗΣ"
-                    JOIN "ΜΕΛΟΣ" 
-                        ON "ΠΑΙΚΤΗΣ"."μητρώο_μέλους" = "ΜΕΛΟΣ"."μητρώο_μέλους"
-                    JOIN "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ" 
-                        ON "ΠΑΙΚΤΗΣ"."μητρώο_μέλους" = "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"."μητρώο_μέλους"
+                    SELECT
+                        "{super().table_name}"."μητρώο_μέλους",
+                        "{super().table_name}"."όνομα", 
+                        "{super().table_name}"."επώνυμο", 
+                        "{super().table_name}"."ημερομηνία_γέννησης", 
+                        "{super().table_name}"."επίπεδο", 
+                        "{super().table_name}"."τηλέφωνο", 
+                        "{super().table_name}"."φύλο", 
+                        "{super().table_name}"."πλήθος_αδελφών",
+                        "{self.table_name}"."RN", 
+                        "{self.table_name}"."Δελτίο_ΑΘλητή", 
+                        "{self.table2_name}"."ήττες", 
+                        "{self.table2_name}"."νίκες", 
+                        "{self.table2_name}"."points", 
+                        "{self.table2_name}"."κατηγορία"
+                    FROM "{self.table_name}"
+                    JOIN "{super().table_name}" 
+                        ON "{self.table_name}"."μητρώο_μέλους" = "{super().table_name}"."μητρώο_μέλους"
+                    JOIN "{self.table2_name}"
+                        ON "{self.table_name}"."μητρώο_μέλους" = "{self.table2_name}"."μητρώο_μέλους"
         """
             cursor.execute(query)
             rows = cursor.fetchall()
@@ -54,22 +55,21 @@ class TeamPaiktis(Melos):
             self.table.setColumnCount(len(column_names) + 2)  # +2 για τις στήλες Διαγραφή και Ενημέρωση
             self.table.setHorizontalHeaderLabels(column_names + ["Διαγραφή", "Ενημέρωση"])
 
-            for row, row_data in enumerate(rows):
-                for column, value in enumerate(row_data):
+# Ρύθμιση των κελιών με τα νέα δεδομένα
+            for row in range(len(rows)):
+                for column, value in enumerate(rows[row]):
                     self.table.setItem(row, column, QTableWidgetItem(str(value)))
-                
-                # Δημιουργία κουμπιού για Διαγραφή και Ενημέρωση για κάθε γραμμή
+
+            # Δημιουργία κουμπιών "Διαγραφή" και "Ενημέρωση" για τη νέα γραμμή
                 delete_button = QPushButton("Διαγραφή")
                 update_button = QPushButton("Ενημέρωση")
-                # Set the style from the loaded stylesheet
 
-                # Σύνδεση των κουμπιών με τις αντίστοιχες μεθόδους
                 delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
                 update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
 
-                self.table.setCellWidget(row, len(column_names), delete_button)  # Διαγραφή
-                self.table.setCellWidget(row, len(column_names) + 1, update_button)
-            # Προσθήκη του πίνακα στο tabMeli
+                self.table.setCellWidget(row, len(column_names), delete_button)  # Διαγραφή στην στήλη 12
+                self.table.setCellWidget(row, len(column_names) + 1, update_button)  # Ενημέρωση στην στήλη 13
+
             layout = self.parent.tabMeli.layout()
             if layout is None:
                 layout = QVBoxLayout()
@@ -101,8 +101,8 @@ class TeamPaiktis(Melos):
         cursor = conn.cursor()
         cursor.execute("PRAGMA foreign_keys = ON;")
         # Έλεγχος αν το μητρώο_μέλους υπάρχει στον πίνακα "ΜΕΛΟΣ"
-        cursor.execute("""
-            SELECT * FROM "ΜΕΛΟΣ"
+        cursor.execute(f"""
+            SELECT * FROM "{super().table_name}"
             WHERE "μητρώο_μέλους" = ?
         """, (μητρώο_μέλους,))
         member_data = cursor.fetchone()
@@ -112,29 +112,27 @@ class TeamPaiktis(Melos):
             conn.close()
             return
 
-        # Ανακτάς τα δεδομένα του μέλους από τον πίνακα "ΜΕΛΟΣ
-        # Έλεγχος αν υπάρχει το μητρώο_μέλους στον πίνακα "ΠΑΙΚΤΗΣ"
-        cursor.execute("""
-            SELECT * FROM "ΠΑΙΚΤΗΣ"
+        cursor.execute(f"""
+            SELECT * FROM "{self.table_name}"
             WHERE "μητρώο_μέλους" = ?
         """, (μητρώο_μέλους,))
         result = cursor.fetchone()
 
-        if result:  # Εάν υπάρχει ήδη το μητρώο_μέλους στον πίνακα "ΠΑΙΚΤΗΣ"
-            QMessageBox.warning(self.parent, "Σφάλμα", "Ο παίκτης υπάρχει ήδη στον πίνακα ΠΑΙΚΤΗΣ.")
+        if result:  # 
+            QMessageBox.warning(self.parent, "Σφάλμα", f'Ο παίκτης υπάρχει ήδη στον πίνακα "{self.table_name}".')
             conn.close()
             return
 
         try:
-            # Εισαγωγή του νέου παίκτη στον πίνακα "ΠΑΙΚΤΗΣ"
-            cursor.execute("""
-                INSERT INTO "ΠΑΙΚΤΗΣ" ("RN", "μητρώο_μέλους")
+            
+            cursor.execute(f"""
+                INSERT INTO "{self.table_name}" ("RN", "μητρώο_μέλους")
                 VALUES (?, ?)
             """, (RN, μητρώο_μέλους))
 
-            # Εισαγωγή στον πίνακα "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ" με τα default δεδομένα
-            cursor.execute("""
-                INSERT INTO "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ" ("μητρώο_μέλους", "ήττες", "νίκες", "points", "κατηγορία")
+            
+            cursor.execute(f"""
+                INSERT INTO "{self.table2_name}" ("μητρώο_μέλους", "ήττες", "νίκες", "points", "κατηγορία")
                 VALUES (?, 0, 0, 0, "")
             """, (μητρώο_μέλους,))
 
@@ -142,27 +140,28 @@ class TeamPaiktis(Melos):
             conn.commit()
 
             # Εκτέλεση ενός query για να ανακτήσουμε όλα τα δεδομένα του νέου παίκτη από τους πίνακες
-            cursor.execute("""
-                        SELECT 
-                            "ΜΕΛΟΣ"."όνομα", 
-                            "ΜΕΛΟΣ"."επώνυμο", 
-                            "ΜΕΛΟΣ"."ημερομηνία_γέννησης", 
-                            "ΜΕΛΟΣ"."επίπεδο", 
-                            "ΜΕΛΟΣ"."τηλέφωνο", 
-                            "ΜΕΛΟΣ"."φύλο", 
-                            "ΜΕΛΟΣ"."πλήθος_αδελφών",
-                            "ΠΑΙΚΤΗΣ"."RN", 
-                            "ΠΑΙΚΤΗΣ"."Δελτίο_ΑΘλητή", 
-                            "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"."ήττες", 
-                            "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"."νίκες", 
-                            "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"."points", 
-                            "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"."κατηγορία"
-                        FROM "ΠΑΙΚΤΗΣ"
-                        JOIN "ΜΕΛΟΣ" 
-                            ON "ΠΑΙΚΤΗΣ"."μητρώο_μέλους" = "ΜΕΛΟΣ"."μητρώο_μέλους"
-                        JOIN "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ" 
-                            ON "ΠΑΙΚΤΗΣ"."μητρώο_μέλους" = "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"."μητρώο_μέλους"
-                        WHERE "ΠΑΙΚΤΗΣ"."μητρώο_μέλους" = ?
+            cursor.execute(f"""
+                        SELECT
+                            "{super().table_name}"."μητρώο_μέλους", 
+                            "{super().table_name}"."όνομα", 
+                            "{super().table_name}"."επώνυμο", 
+                            "{super().table_name}"."ημερομηνία_γέννησης", 
+                            "{super().table_name}"."επίπεδο", 
+                            "{super().table_name}"."τηλέφωνο", 
+                            "{super().table_name}"."φύλο", 
+                            "{super().table_name}"."πλήθος_αδελφών",
+                            "{self.table_name}"."RN", 
+                            "{self.table_name}"."Δελτίο_ΑΘλητή", 
+                            "{self.table2_name}"."ήττες", 
+                            "{self.table2_name}"."νίκες", 
+                            "{self.table2_name}"."points", 
+                            "{self.table2_name}"."κατηγορία"
+                        FROM "{self.table_name}"
+                        JOIN "{super().table_name}" 
+                            ON "{self.table_name}"."μητρώο_μέλους" = "{super().table_name}"."μητρώο_μέλους"
+                        JOIN "{self.table2_name}" 
+                            ON "{self.table_name}"."μητρώο_μέλους" = "{self.table2_name}"."μητρώο_μέλους"
+                        WHERE "{self.table_name}"."μητρώο_μέλους" = ?
             """, (μητρώο_μέλους,))
 
             row = cursor.fetchone()  # Παίρνουμε την τελευταία γραμμή (νέο μέλος)
@@ -198,20 +197,21 @@ class TeamPaiktis(Melos):
             conn.close()
 
     def update_member(self, row):
-        # Αναγνωρίζουμε το μητρώο μέλους
-        member_id = self.table.item(row, 0).text()  # Υποθέτουμε ότι το μητρώο είναι στην 1η στήλη
-
+        # Επιλέγουμε το μητρώο του μέλους και ζητάμε νέα δεδομένα για ενημέρωση
+        member_id = self.table.item(row, 0).text()  # Το μητρώο_μέλους είναι στην πρώτη στήλη του πίνακα
+        
+    
         column_names = [
-            "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", "Επίπεδο",
-            "Τηλέφωνο", "Φύλο", "Πλήθος Αδελφών", "RN",
+           "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", "Επίπεδο", 
+            "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών", "Δελτίο Αθλητή", "RN", 
             "Ήττες", "Νίκες", "Points", "Κατηγορία"
         ]
         
-        # Ζητάμε από τον χρήστη ποιο πεδίο θέλει να ενημερώσει
+        # Περνάμε την parent (QDialog) ως το πρώτο όρισμα
         column_index, ok = QInputDialog.getInt(
-            self.parent,
-            "Επιλογή Πεδίου",
-            "Διάλεξε στήλη για ενημέρωση (1-12):\n" + "\n".join([f"{i+1}. {name}" for i, name in enumerate(column_names)]),
+            self.parent,  # parent πρέπει να είναι το QDialog (δηλαδή self.parent)
+            "Επιλογή Πεδίου", 
+            "Διάλεξε στήλη για ενημέρωση (1-13):\n" + "\n".join([f"{i+1}. {name}" for i, name in enumerate(column_names)]),
             1, 1, len(column_names)
         )
         
@@ -229,7 +229,7 @@ class TeamPaiktis(Melos):
         if not ok or not new_value:
             return
 
-        # Ελέγχοι για τα πεδία
+        # Ελέγχοι για τους περιορισμούς
         if column_index == 2:  # Ημερομηνία Γέννησης
             try:
                 QDate.fromString(new_value, "yyyy-MM-dd")
@@ -256,63 +256,98 @@ class TeamPaiktis(Melos):
                 QMessageBox.warning(self.parent, "Σφάλμα", "Μη έγκυρο φύλο. Πληκτρολογήστε 'ΑΡΡΕΝ' ή 'ΘΗΛΥ'.")
                 return
 
-        elif column_index == 6:  # Πλήθος Αδελφών
+        elif column_index == 6:  # Πλήθος Αδερφών
             if not new_value.isdigit() or int(new_value) < 0:
                 QMessageBox.warning(self.parent, "Σφάλμα", "Μη έγκυρος αριθμός αδελφών.")
                 return
-
-        elif column_index == 7:  # RN (Δεν αλλάζει, δεν χρειάζεται να γίνει επεξεργασία εδώ)
-            pass
-
-        elif column_index == 8:  # Ήττες
-            if not new_value.isdigit():
-                QMessageBox.warning(self.parent, "Σφάλμα", "Μη έγκυρος αριθμός ήττων.")
-                return
-
-        elif column_index == 9:  # Νίκες
-            if not new_value.isdigit():
-                QMessageBox.warning(self.parent, "Σφάλμα", "Μη έγκυρος αριθμός νικών.")
-                return
-
-        elif column_index == 10:  # Points
-            try:
-                new_value = float(new_value)
-            except ValueError:
-                QMessageBox.warning(self.parent, "Σφάλμα", "Μη έγκυρο αριθμητικό πεδίο για points.")
-                return
-
-        elif column_index == 11:  # Κατηγορία
-            pass  # Προσθήκη λογικής για έλεγχο αν απαιτείται
-
-        # Ενημέρωση στους πίνακες "ΜΕΛΟΣ", "ΠΑΙΚΤΗΣ", "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"
-        if column_index < 7:  # Αναφορά στον πίνακα "ΜΕΛΟΣ"
-            columns_db = ["επώνυμο", "όνομα", "ημερομηνία_γέννησης", "επίπεδο", "τηλέφωνο", "φύλο", "πλήθος_αδελφών"]
-            table_name = "ΜΕΛΟΣ"
-        elif column_index >= 8 and column_index < 11:  # "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"
-            columns_db = ["ήττες", "νίκες", "points"]
-            table_name = "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"
-        else:
-            columns_db = []  # Δεν χρειάζεται για άλλα πεδία αυτή τη στιγμή
-            table_name = ""
-
-        # Εκτέλεση του update query
-        conn = sqlite3.connect('database.db')
-        cursor = conn.cursor()
-        cursor.execute("PRAGMA foreign_keys = ON;")
-        try:
-            cursor.execute(
-                f" UPDATE {table_name} SET {columns_db[column_index]} = ? WHERE μητρώο_μέλους = ?;",
-                (new_value, member_id)
-            )
-
-            conn.commit()
-
-            # Ενημέρωση του πίνακα στο UI
-            self.table.setItem(row, column_index + 1, QTableWidgetItem(str(new_value)))  # Ενημέρωση στο UI
-            QMessageBox.information(self.parent, "Επιτυχία", f"Το πεδίο '{column_names[column_index]}' ενημερώθηκε επιτυχώς.")
         
+        try:
+            # Ελέγχουμε τη σύνδεση στη βάση και τη σωστή εκτέλεση του query
+            conn = sqlite3.connect('database.db')
+            cursor = conn.cursor()
+
+ 
+            if column_index < 7:
+                columns_db = ["επώνυμο", "όνομα", "ημερομηνία_γέννησης", "επίπεδο", "τηλέφωνο", "φύλο", "πλήθος_αδελφών"]
+               
+                cursor.execute(
+                    f"""UPDATE "{super().table_name}" SET {columns_db[column_index]} = ? WHERE μητρώο_μέλους = ?""",
+                    (new_value, member_id)
+                )
+
+
+            elif column_index == 7 or column_index == 8:
+                columns_db = ["Δελτίο_ΑΘλητή", "RN"]
+                
+                cursor.execute(
+                    f"""UPDATE "{self.table_name}" SET {columns_db[column_index-7]} = ? WHERE μητρώο_μέλους = ?""",
+                    (new_value, member_id)
+                )
+
+
+            elif column_index >= 9:
+                columns_db = ["ήττες", "νίκες", "points", "κατηγορία"]
+              
+                cursor.execute(
+                    f"""UPDATE "{self.table2_name}" SET {columns_db[column_index-9]} = ? WHERE μητρώο_μέλους = ?""",
+                    (new_value, member_id)
+                )
+
+            conn.commit()  # Αποθηκεύουμε τις αλλαγές
+
         except sqlite3.Error as e:
+            # Σε περίπτωση σφάλματος κατά την εκτέλεση της ενημέρωσης
             QMessageBox.warning(self.parent, "Σφάλμα", f"Σφάλμα κατά την ενημέρωση της βάσης: {e}")
         
         finally:
+            # Κλείσιμο της σύνδεσης στη βάση
+            conn.close()
+
+            # Ενημέρωση του πίνακα στο UI
+            self.table.setItem(row, column_index + 1, QTableWidgetItem(new_value))
+            print(f"Το μέλος με μητρώο {member_id} ενημερώθηκε.")
+    def delete_member(self, row):
+        item = self.table.item(row, 0)
+        if item is None:  # Έλεγχος αν το κελί είναι κενό
+            QMessageBox.warning(self.parent, "Σφάλμα", "Δεν βρέθηκε το μητρώο μέλους για διαγραφή.")
+            return
+
+        member_id = item.text()
+
+        # Ερώτημα για επιβεβαίωση διαγραφής
+        confirmation = QMessageBox.question(
+            self.parent,
+            "Επιβεβαίωση Διαγραφής",
+            f"Είστε σίγουροι ότι θέλετε να διαγράψετε το μέλος με μητρώο {member_id};",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+
+        if confirmation != QMessageBox.StandardButton.Yes:
+            return
+
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+
+        try:
+
+            cursor.execute(f"""DELETE FROM "{self.table_name}" WHERE μητρώο_μέλους = ?""", (member_id,))
+            
+            cursor.execute(f"""DELETE FROM "{self.table2_name}" WHERE μητρώο_μέλους = ?""", (member_id,))
+
+
+            # Επιβεβαίωση και αποθήκευση των αλλαγών στη βάση δεδομένων
+            conn.commit()
+            QMessageBox.information(self.parent, "Επιτυχία", f"Το μέλος με μητρώο {member_id} διαγράφηκε επιτυχώς.")
+            
+            # Διαγραφή από τον πίνακα στο UI
+            self.table.removeRow(row)
+            print(f"Το μέλος με μητρώο {member_id} διαγράφηκε επιτυχώς.")
+
+        except sqlite3.Error as e:
+            # Σε περίπτωση σφάλματος κατά τη διαγραφή από τη βάση
+            conn.rollback()  # Αν κάτι πάει στραβά, αναιρούμε τις αλλαγές
+            QMessageBox.warning(self.parent, "Σφάλμα", f"Σφάλμα κατά τη διαγραφή του μέλους: {e}")
+        
+        finally:
+            # Κλείσιμο της σύνδεσης με τη βάση
             conn.close()

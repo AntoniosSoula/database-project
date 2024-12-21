@@ -154,6 +154,8 @@ class Melos:
             return
 
         member_id = item.text()
+
+        # Ερώτημα για επιβεβαίωση διαγραφής
         confirmation = QMessageBox.question(
             self.parent,
             "Επιβεβαίωση Διαγραφής",
@@ -166,11 +168,35 @@ class Melos:
 
         conn = sqlite3.connect('database.db')
         cursor = conn.cursor()
-        cursor.execute(f"DELETE FROM {self.table_name} WHERE μητρώο_μέλους = ?", (member_id,))
-        conn.commit()
-        conn.close()
-        self.table.removeRow(row)
-        print(f"Το μέλος με μητρώο {member_id} διαγράφηκε επιτυχώς.")
+
+        try:
+
+            cursor.execute(f"DELETE FROM {self.table_name} WHERE μητρώο_μέλους = ?", (member_id,))
+            
+            cursor.execute(f"DELETE FROM 'ΠΑΙΚΤΗΣ' WHERE μητρώο_μέλους = ?", (member_id,))
+
+            # Διαγραφή από τον πίνακα "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"
+            cursor.execute(f"DELETE FROM 'ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ' WHERE μητρώο_μέλους = ?", (member_id,))
+
+            # Διαγραφή από τον πίνακα "ΞΕΝΟΣ ΠΑΙΚΤΗΣ"
+            cursor.execute(f"DELETE FROM 'ΞΕΝΟΣ ΠΑΙΚΤΗΣ' WHERE μητρώο_μέλους = ?", (member_id,))
+
+            # Επιβεβαίωση και αποθήκευση των αλλαγών στη βάση δεδομένων
+            conn.commit()
+            QMessageBox.information(self.parent, "Επιτυχία", f"Το μέλος με μητρώο {member_id} διαγράφηκε επιτυχώς.")
+            
+            # Διαγραφή από τον πίνακα στο UI
+            self.table.removeRow(row)
+            print(f"Το μέλος με μητρώο {member_id} διαγράφηκε επιτυχώς.")
+
+        except sqlite3.Error as e:
+            # Σε περίπτωση σφάλματος κατά τη διαγραφή από τη βάση
+            conn.rollback()  # Αν κάτι πάει στραβά, αναιρούμε τις αλλαγές
+            QMessageBox.warning(self.parent, "Σφάλμα", f"Σφάλμα κατά τη διαγραφή του μέλους: {e}")
+        
+        finally:
+            # Κλείσιμο της σύνδεσης με τη βάση
+            conn.close()
 
     def update_member(self, row):
         # Επιλέγουμε τον αριθμό μητρώου και ζητάμε νέα δεδομένα για ενημέρωση
