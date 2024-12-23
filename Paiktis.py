@@ -1067,3 +1067,131 @@ class PaiktisAmeivomenos(TeamPaiktis):
             QMessageBox.critical(self.parent, "Σφάλμα", f"Σφάλμα κατά την εισαγωγή του παίκτη: {e}")
         finally:
             conn.close()
+    def update_member(self, row):
+        # Επιλέγουμε το μητρώο του μέλους και ζητάμε νέα δεδομένα για ενημέρωση
+        member_id = self.table.item(row, 0).text()  # Το μητρώο_μέλους είναι στην πρώτη στήλη του πίνακα
+
+        column_names = [
+            "ΑΦΜ", "αμοιβή", "ημερομηνία έναρξης συμβολαίου", "ημερομηνία λήξης συμβολαίου", "IBAN"
+        ]
+
+        # Περνάμε την parent (QDialog) ως το πρώτο όρισμα
+        column_index, ok = QInputDialog.getInt(
+            self.parent,  # parent πρέπει να είναι το QDialog (δηλαδή self.parent)
+            "Επιλογή Πεδίου", 
+            "Διάλεξε στήλη για ενημέρωση (1-5):\n" + "\n".join([f"{i+1}. {name}" for i, name in enumerate(column_names)]),
+            1, 1, len(column_names)
+        )
+
+        if not ok:
+            return
+
+        column_index -= 1  # Γυρίζει σε zero-based index
+
+        if column_index is None:
+            return
+
+        new_value, ok = QInputDialog.getText(
+            self.parent, "Νέα Τιμή", f"Εισάγετε νέα τιμή για {column_names[column_index]}:"
+        )
+        if not ok or not new_value:
+            return
+
+        # Ελέγχοι για τους περιορισμούς
+        if column_index == 0:  # ΑΦΜ
+            if len(new_value) != 9 or not new_value.isdigit():
+                QMessageBox.warning(self.parent, "Σφάλμα", "Μη έγκυρο ΑΦΜ. Πρέπει να έχει 9 ψηφία.")
+                return
+
+        elif column_index == 1:  # Αμοιβή
+            try:
+                float(new_value)  # Έλεγχος αν η αμοιβή είναι αριθμός
+                if float(new_value) < 0:
+                    QMessageBox.warning(self.parent, "Σφάλμα", "Η αμοιβή πρέπει να είναι θετικός αριθμός.")
+                    return
+            except ValueError:
+                QMessageBox.warning(self.parent, "Σφάλμα", "Η αμοιβή πρέπει να είναι αριθμός.")
+                return
+
+        elif column_index == 2 or column_index == 3:  # Ημερομηνία Έναρξης και Λήξης Συμβολαίου
+            start_date = QDate.fromString(new_value, "yyyy-MM-dd")
+            if not start_date.isValid():
+                QMessageBox.warning(self.parent, "Σφάλμα", "Μη έγκυρη ημερομηνία. Βεβαιωθείτε ότι η ημερομηνία είναι σωστή.")
+                return
+
+            if column_index == 3:  # Ειδικά για την ημερομηνία λήξης, ελέγχουμε ότι είναι μεγαλύτερη από την ημερομηνία έναρξης
+                end_date = QDate.fromString(new_value, "yyyy-MM-dd")
+                start_date_str = self.table.item(row, 2).text()  # Λαμβάνουμε την ημερομηνία έναρξης από τον πίνακα
+                start_date_check = QDate.fromString(start_date_str, "yyyy-MM-dd")
+                if end_date <= start_date_check:
+                    QMessageBox.warning(self.parent, "Σφάλμα", "Η ημερομηνία λήξης πρέπει να είναι μετά την ημερομηνία έναρξης.")
+                    return
+
+        elif column_index == 4:  # IBAN
+            if len(new_value) != 27 or not new_value.startswith('GR'):
+                QMessageBox.warning(self.parent, "Σφάλμα", "Μη έγκυρο IBAN. Πρέπει να έχει 27 χαρακτήρες και να ξεκινάει με 'GR'.")
+                return
+
+        try:
+            # Ελέγχουμε τη σύνδεση στη βάση και τη σωστή εκτέλεση του query
+            conn = sqlite3.connect('database.db')
+            cursor = conn.cursor()
+
+            # Εκτέλεση του UPDATE query για τον αμειβόμενο παίκτη
+            if column_index == 0:
+                columns_db = ["ΑΦΜ"]
+            elif column_index == 1:
+                columns_db = ["αμοιβή"]
+            elif column_index == 2:
+                columns_db = ["ημερομηνία έναρξης συμβολαίου"]
+            elif column_index == 3:
+                columns_db = ["ημερομηνία λήξης συμβολαίου"]
+            elif column_index == 4:
+                columns_db = ["IBAN"]
+
+            cursor.execute(
+                f"""UPDATE "{self.table_name}" SET {columns_db[0]} = ? WHERE μητρώο_μέλους = ?""",
+                (new_value, member_id)
+            )
+
+            conn.commit()  # Αποθηκεύουμε τις αλλαγές
+
+            # Ανακτούμε τα νέα δεδομένα από τη βάση και ενημερώνουμε τον πίνακα UI
+            query = f"""
+                SELECT
+                    "{Melos.table_name}"."μητρώο_μέλους",  -- Πίνακας ΜΕΛΟΣ
+                    "{Melos.table_name}"."όνομα", 
+                    "{Melos.table_name}"."επώνυμο", 
+                    "{Melos.table_name}"."τηλέφωνο", 
+                    "{super().table_name}"."RN",  -- Πίνακας ΠΑΙΚΤΗΣ
+                    "{self.table_name}"."ΑΦΜ",  -- Πίνακας ΑΜΕΙΒΟΜΕΝΟΣ ΠΑΙΚΤΗΣ
+                    "{self.table_name}"."αμοιβή", 
+                    "{self.table_name}"."ημερομηνία έναρξης συμβολαίου", 
+                    "{self.table_name}"."ημερομηνία λήξης συμβολαίου",
+                    "{self.table_name}"."IBAN"
+                FROM "{self.table_name}"  -- ΑΜΕΙΒΟΜΕΝΟΣ ΠΑΙΚΤΗΣ
+                JOIN "{Melos.table_name}" 
+                    ON "{self.table_name}"."μητρώο_μέλους" = "{Melos.table_name}"."μητρώο_μέλους"  -- JOIN με ΜΕΛΟΣ
+                JOIN "{super().table_name}"  -- JOIN με ΠΑΙΚΤΗΣ
+                    ON "{self.table_name}"."μητρώο_μέλους" = "{super().table_name}"."μητρώο_μέλους"
+                WHERE "{self.table_name}"."μητρώο_μέλους" = ?
+            """
+            cursor.execute(query, (member_id,))
+            row = cursor.fetchone()
+
+            if row is None:  # Ελέγχουμε αν δεν βρέθηκαν αποτελέσματα
+                QMessageBox.warning(self.parent, "Σφάλμα", "Δεν βρέθηκαν δεδομένα για το μέλος με το μητρώο αυτό.")
+                return
+
+            # Ενημέρωση της αντίστοιχης γραμμής στον πίνακα UI
+            for item in range(len(row)):
+                if isinstance(row[item], str):
+                    self.table.item(row, item).setText(row[item])  # Ενημέρωση του κελιού με το νέο δεδομένο
+                else:
+                    self.table.item(row, item).setText(str(row[item]))  # Ενημέρωση του κελιού με το νέο δεδομένο
+
+            QMessageBox.information(self.parent, "Επιτυχία", f"Τα δεδομένα του παίκτη με μητρώο {member_id} ενημερώθηκαν.")
+        except sqlite3.Error as e:
+            QMessageBox.critical(self.parent, "Σφάλμα", f"Σφάλμα κατά την ενημέρωση του παίκτη: {e}")
+        finally:
+            conn.close()
