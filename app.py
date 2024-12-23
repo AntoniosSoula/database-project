@@ -10,12 +10,12 @@ class Main(QDialog):
         self.melos = None  # Αρχικοποιούμε το στιγμιότυπο της κλάσης Meli
         self.playerInTeam=None
         self.playerNoInTeam=None
-
+        self.playerPaid=None
         # Συνδέουμε το κουμπί με την μέθοδο
         self.buttonTableMeli.clicked.connect(self.show_member_table)
         self.buttonTablePaiktis.clicked.connect(self.show_teampaiktis_table)
         self.buttonTableNoInTeam.clicked.connect(self.show_no_teampaiktis_table)
-
+        self.buttonTablePaidPaiktis.clicked.connect(self.show_paid_paiktis_table)
     def show_member_table(self):
         # Δημιουργία του στιγμιότυπου της κλάσης Meli όταν πατηθεί το κουμπί
         if self.melos is None:
@@ -30,10 +30,12 @@ class Main(QDialog):
         if self.playerNoInTeam is None:
            self.playerNoInTeam = ΝοTeamPaiktis(self)
         self.playerNoInTeam.show_table()    
-
+    def show_paid_paiktis_table(self):
+        if self.playerPaid is None:
+           self.playerPaid = PaiktisAmeivomenos(self)
+        self.playerPaid.show_table() 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = Main()
     window.show()
-    
     sys.exit(app.exec())
