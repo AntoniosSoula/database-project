@@ -1107,18 +1107,26 @@ class PaiktisAmeivomenos(TeamPaiktis):
                 return
 
         elif column_index == 2 or column_index == 3:  # Ημερομηνία Έναρξης και Λήξης Συμβολαίου
-            start_date = QDate.fromString(new_value, "yyyy-MM-dd")
-            if not start_date.isValid():
+            new_date = QDate.fromString(new_value, "yyyy-MM-dd")
+            if not new_date.isValid():
                 QMessageBox.warning(self.parent, "Σφάλμα", "Μη έγκυρη ημερομηνία. Βεβαιωθείτε ότι η ημερομηνία είναι σωστή.")
                 return
 
-            if column_index == 3:  # Ειδικά για την ημερομηνία λήξης, ελέγχουμε ότι είναι μεγαλύτερη από την ημερομηνία έναρξης
-                end_date = QDate.fromString(new_value, "yyyy-MM-dd")
+            if column_index == 2:  # Έλεγχος όταν τροποποιείται η ημερομηνία έναρξης
+                end_date_str = self.table.item(row, 3).text()  # Λαμβάνουμε την ημερομηνία λήξης από τον πίνακα
+                if end_date_str:  # Ελέγχουμε αν υπάρχει ήδη ημερομηνία λήξης
+                    end_date = QDate.fromString(end_date_str, "yyyy-MM-dd")
+                    if end_date.isValid() and new_date >= end_date:  # Αν η ημερομηνία λήξης είναι έγκυρη, ελέγχουμε την ανισότητα
+                        QMessageBox.warning(self.parent, "Σφάλμα", "Η ημερομηνία έναρξης πρέπει να είναι πριν την ημερομηνία λήξης.")
+                        return
+
+            elif column_index == 3:  # Έλεγχος όταν τροποποιείται η ημερομηνία λήξης
                 start_date_str = self.table.item(row, 2).text()  # Λαμβάνουμε την ημερομηνία έναρξης από τον πίνακα
-                start_date_check = QDate.fromString(start_date_str, "yyyy-MM-dd")
-                if end_date <= start_date_check:
-                    QMessageBox.warning(self.parent, "Σφάλμα", "Η ημερομηνία λήξης πρέπει να είναι μετά την ημερομηνία έναρξης.")
-                    return
+                if start_date_str:  # Ελέγχουμε αν υπάρχει ήδη ημερομηνία έναρξης
+                    start_date = QDate.fromString(start_date_str, "yyyy-MM-dd")
+                    if start_date.isValid() and new_date <= start_date:  # Αν η ημερομηνία έναρξης είναι έγκυρη, ελέγχουμε την ανισότητα
+                        QMessageBox.warning(self.parent, "Σφάλμα", "Η ημερομηνία λήξης πρέπει να είναι μετά την ημερομηνία έναρξης.")
+                        return
 
         elif column_index == 4:  # IBAN
             if len(new_value) != 27 or not new_value.startswith('GR'):
@@ -1131,60 +1139,21 @@ class PaiktisAmeivomenos(TeamPaiktis):
             cursor = conn.cursor()
 
             # Εκτέλεση του UPDATE query για τον αμειβόμενο παίκτη
-            if column_index == 0:
-                columns_db = ["ΑΦΜ"]
-            elif column_index == 1:
-                columns_db = ["αμοιβή"]
-            elif column_index == 2:
-                columns_db = ["ημερομηνία έναρξης συμβολαίου"]
-            elif column_index == 3:
-                columns_db = ["ημερομηνία λήξης συμβολαίου"]
-            elif column_index == 4:
-                columns_db = ["IBAN"]
-
+            columns_db = ["ΑΦΜ", "αμοιβή", "ημερομηνία έναρξης συμβολαίου", "ημερομηνία λήξης συμβολαίου", "IBAN"]
             cursor.execute(
-                f"""UPDATE "{self.table_name}" SET {columns_db[0]} = ? WHERE μητρώο_μέλους = ?""",
+                f"""UPDATE "{self.table_name}" SET "{columns_db[column_index]}" = ? WHERE μητρώο_μέλους = ?""",
                 (new_value, member_id)
             )
+            conn.commit()
 
-            conn.commit()  # Αποθηκεύουμε τις αλλαγές
+            # Ενημέρωση του πίνακα UI
+            self.table.setItem(row, column_index + 5, QTableWidgetItem(str(new_value)))
+             # Αποθηκεύουμε τις αλλαγές
 
             # Ανακτούμε τα νέα δεδομένα από τη βάση και ενημερώνουμε τον πίνακα UI
-            query = f"""
-                SELECT
-                    "{Melos.table_name}"."μητρώο_μέλους",  -- Πίνακας ΜΕΛΟΣ
-                    "{Melos.table_name}"."όνομα", 
-                    "{Melos.table_name}"."επώνυμο", 
-                    "{Melos.table_name}"."τηλέφωνο", 
-                    "{super().table_name}"."RN",  -- Πίνακας ΠΑΙΚΤΗΣ
-                    "{self.table_name}"."ΑΦΜ",  -- Πίνακας ΑΜΕΙΒΟΜΕΝΟΣ ΠΑΙΚΤΗΣ
-                    "{self.table_name}"."αμοιβή", 
-                    "{self.table_name}"."ημερομηνία έναρξης συμβολαίου", 
-                    "{self.table_name}"."ημερομηνία λήξης συμβολαίου",
-                    "{self.table_name}"."IBAN"
-                FROM "{self.table_name}"  -- ΑΜΕΙΒΟΜΕΝΟΣ ΠΑΙΚΤΗΣ
-                JOIN "{Melos.table_name}" 
-                    ON "{self.table_name}"."μητρώο_μέλους" = "{Melos.table_name}"."μητρώο_μέλους"  -- JOIN με ΜΕΛΟΣ
-                JOIN "{super().table_name}"  -- JOIN με ΠΑΙΚΤΗΣ
-                    ON "{self.table_name}"."μητρώο_μέλους" = "{super().table_name}"."μητρώο_μέλους"
-                WHERE "{self.table_name}"."μητρώο_μέλους" = ?
-            """
-            cursor.execute(query, (member_id,))
-            row = cursor.fetchone()
-
-            if row is None:  # Ελέγχουμε αν δεν βρέθηκαν αποτελέσματα
-                QMessageBox.warning(self.parent, "Σφάλμα", "Δεν βρέθηκαν δεδομένα για το μέλος με το μητρώο αυτό.")
-                return
-
-            # Ενημέρωση της αντίστοιχης γραμμής στον πίνακα UI
-            for item in range(len(row)):
-                if isinstance(row[item], str):
-                    self.table.item(row, item).setText(row[item])  # Ενημέρωση του κελιού με το νέο δεδομένο
-                else:
-                    self.table.item(row, item).setText(str(row[item]))  # Ενημέρωση του κελιού με το νέο δεδομένο
-
+           
             QMessageBox.information(self.parent, "Επιτυχία", f"Τα δεδομένα του παίκτη με μητρώο {member_id} ενημερώθηκαν.")
         except sqlite3.Error as e:
-            QMessageBox.critical(self.parent, "Σφάλμα", f"Σφάλμα κατά την ενημέρωση του παίκτη: {e}")
+            QMessageBox.critical(self.parent, "Σφάλμα", f"Σφάλμα κατά την ενημέρωση της βάσης: {e}")
         finally:
             conn.close()
