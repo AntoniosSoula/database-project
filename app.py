@@ -11,14 +11,15 @@ class Main(QDialog):
         self.playerNoInTeam = None
         self.playerPaid = None
         self.subscription = None  # Προσθήκη της νέας μεταβλητής για το συνδρομητή
-
+        self.employers=None
         # Συνδέουμε τα κουμπιά με τις αντίστοιχες μεθόδους
         self.buttonTableMeli.clicked.connect(self.show_member_table)
         self.buttonTablePaiktis.clicked.connect(self.show_teampaiktis_table)
         self.buttonTableNoInTeam.clicked.connect(self.show_no_teampaiktis_table)
         self.buttonTablePaidPaiktis.clicked.connect(self.show_paid_paiktis_table)
         self.buttonSyndromh.clicked.connect(self.show_subscription_table)  # Νέα σύνδεση για το κουμπί συνδρομητών
-
+        self.buttonTablePaidPaiktis.clicked.connect(self.show_paid_paiktis_table)
+        self.buttonTableProsopiko.clicked.connect(self.show_employees_table)
     def show_member_table(self):
         from Melos import Melos  # Καθυστερημένη εισαγωγή
         if self.melos is None:
@@ -48,6 +49,11 @@ class Main(QDialog):
         if self.subscription is None:
             self.subscription = Syndromi(self)
         self.subscription.show_table()
+    def show_employees_table(self):
+        from Prosopiko import Prosopiko  # Καθυστερημένη εισαγωγή της κλάσης Syndromi
+        if self.employers is None:
+            self.employers = Prosopiko(self)
+        self.employers.show_table()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
