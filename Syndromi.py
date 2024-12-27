@@ -2,7 +2,7 @@
 import sqlite3
 from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QPushButton, QVBoxLayout, QMessageBox, QInputDialog
 from PyQt6.QtCore import Qt
-
+from Melos import *
 class Syndromi:
     table_name = 'ΣΥΝΔΡΟΜΗ'  # Ή το σωστό όνομα πίνακα για τους συνδρομητές
 
@@ -77,5 +77,7 @@ class Syndromi:
             # Ενεργοποίηση του κουμπιού "Πίνακας Μελών"
             self.parent.buttonSyndromh.setEnabled(True)
 
-class MelosPlironeiSyndromi(Syndromi):
+class MelosPlironeiSyndromi(Syndromi,Melos):
     table_name='ΜΕΛΟΣ_ΠΛΗΡΩΝΕΙ_ΣΥΝΔΡΟΜΗ'
+    def __init__(self,parent):
+        pass
