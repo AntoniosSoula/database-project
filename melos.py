@@ -295,13 +295,16 @@ class Melos:
         if self.table_shown:
             self.table.setParent(None)
             self.addButton.setParent(None)
+            self.backButton.setParent(None)
             self.table_shown = False
-            
-            # Access 'tabWidget' from the parent (Main class)
-            layout = self.parent.tabWidget.widget(self.parent.tabWidget.indexOf(self.parent.tabMeli)).layout()
-            if layout:
-                layout.removeWidget(self.backButton)
-                self.backButton.setParent(None)
-            
-            # Enable the button again
+
+            # Καθαρισμός του layout του tabMeli
+            layout = self.parent.tabMeli.layout()
+            if layout is not None:
+                while layout.count():
+                    child = layout.takeAt(0)
+                    if child.widget():
+                        child.widget().deleteLater()
+
+            # Ενεργοποίηση του κουμπιού "Πίνακας Μελών"
             self.parent.buttonTableMeli.setEnabled(True)

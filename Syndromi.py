@@ -10,6 +10,18 @@ class Syndromi:
         self.parent = parent
         self.table = None
         self.table_shown = False
+        self.Buttonstylesheet = self.load_stylesheet("Buttonstyle.txt")
+        self.backButton = QPushButton("Επιστροφή")
+        self.backButton.setStyleSheet(self.Buttonstylesheet)
+        self.backButton.clicked.connect(self.go_back)
+
+    def load_stylesheet(self, style):
+        try:
+            with open(style, "r") as f:
+                return f.read()
+        except Exception as e:
+            print(f"Error loading stylesheet: {e}")
+            return None
     def show_table(self):
         if self.table_shown:
             self.table.setParent(None)  # Αφαιρούμε τον πίνακα αν έχει εμφανιστεί ήδη
@@ -44,5 +56,23 @@ class Syndromi:
             self.parent.tabSyndromi.setLayout(layout)
 
         layout.addWidget(self.table)
+        layout.addWidget(self.backButton)
         self.table_shown = True
 
+
+    def go_back(self):
+        if self.table_shown:
+            self.table.setParent(None)
+            self.backButton.setParent(None)
+            self.table_shown = False
+
+            # Καθαρισμός του layout του tabMeli
+            layout = self.parent.tabSyndromi.layout()
+            if layout is not None:
+                while layout.count():
+                    child = layout.takeAt(0)
+                    if child.widget():
+                        child.widget().deleteLater()
+
+            # Ενεργοποίηση του κουμπιού "Πίνακας Μελών"
+            self.parent.buttonSyndromh.setEnabled(True)
