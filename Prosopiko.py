@@ -159,6 +159,169 @@ class Prosopiko:
             # Κλείσιμο της σύνδεσης με τη βάση
             conn.close()
     def add_member(self):
-        pass
-    def update_member(self):
-        pass
+        # Λήψη δεδομένων για νέο υπάλληλο
+        email, ok1 = QInputDialog.getText(self.parent, "Email", "Εισάγετε το email του υπαλλήλου:")
+        if not ok1 or not email:
+            return
+
+        name, ok2 = QInputDialog.getText(self.parent, "Όνομα", "Εισάγετε το όνομα του υπαλλήλου:")
+        if not ok2 or not name:
+            return
+
+        surname, ok3 = QInputDialog.getText(self.parent, "Επώνυμο", "Εισάγετε το επώνυμο του υπαλλήλου:")
+        if not ok3 or not surname:
+            return
+
+        afm, ok4 = QInputDialog.getText(self.parent, "ΑΦΜ", "Εισάγετε το ΑΦΜ (9 ψηφία):")
+        if not ok4 or not (len(afm) == 9 and afm.isdigit()):
+            QMessageBox.warning(self.parent, "Σφάλμα", "Το ΑΦΜ πρέπει να αποτελείται από 9 ψηφία.")
+            return
+
+        salary, ok5 = QInputDialog.getDouble(self.parent, "Αμοιβή", "Εισάγετε την αμοιβή:", 0, 0)
+        if not ok5:
+            return
+
+        phone, ok6 = QInputDialog.getText(self.parent, "Τηλέφωνο", "Εισάγετε το τηλέφωνο (10 ψηφία):")
+        if not ok6 or not (len(phone) == 10 and phone.isdigit()):
+            QMessageBox.warning(self.parent, "Σφάλμα", "Το τηλέφωνο πρέπει να αποτελείται από 10 ψηφία.")
+            return
+
+        iban, ok7 = QInputDialog.getText(self.parent, "IBAN", "Εισάγετε το IBAN (27 χαρακτήρες, ξεκινά με 'GR'):")
+        if not ok7 or not (len(iban) == 27 and iban.startswith('GR')):
+            QMessageBox.warning(self.parent, "Σφάλμα", "Το IBAN πρέπει να έχει 27 χαρακτήρες και να ξεκινά με 'GR'.")
+            return
+
+        employment, ok8 = QInputDialog.getItem(
+            self.parent,
+            "Απασχόληση",
+            "Επιλέξτε τον τύπο απασχόλησης:",
+            ["Γραμματέας", "Προπονητής"],
+            0,
+            False
+        )
+        if not ok8:
+            return
+
+        # Εισαγωγή δεδομένων στη βάση
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        try:
+            cursor.execute(f"""
+                INSERT INTO {self.table_name} (email, ΑΦΜ, αμοιβή, τηλέφωνο, όνομα, επώνυμο, IBAN)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (email, afm, salary, phone, name, surname, iban))
+            
+            # Ανάλογα με τον τύπο απασχόλησης, εισάγουμε στο σωστό table
+            if employment == "Προπονητής":
+                cursor.execute(f"""INSERT INTO {self.table2_name} (email) VALUES (?)""", (email,))
+            elif employment == "Γραμματέας":
+                cursor.execute(f"""INSERT INTO {self.table3_name} (email) VALUES (?)""", (email,))
+            
+            conn.commit()
+
+            # Ενημέρωση του UI πίνακα
+            row = self.table.rowCount()  # Λήψη του τρέχοντος αριθμού γραμμών
+            self.table.insertRow(row)  # Προσθήκη νέας γραμμής
+
+            # Ρύθμιση των κελιών με τα νέα δεδομένα
+            self.table.setItem(row, 0, QTableWidgetItem(email))
+            self.table.setItem(row, 1, QTableWidgetItem(name))
+            self.table.setItem(row, 2, QTableWidgetItem(surname))
+            self.table.setItem(row, 3, QTableWidgetItem(afm))
+            self.table.setItem(row, 4, QTableWidgetItem(f"{salary:.2f}"))
+            self.table.setItem(row, 5, QTableWidgetItem(phone))
+            self.table.setItem(row, 6, QTableWidgetItem(iban))
+            self.table.setItem(row, 7, QTableWidgetItem(employment))  # Προσθήκη απασχόλησης
+
+            # Δημιουργία κουμπιών Διαγραφή και Ενημέρωση
+            delete_button = QPushButton("Διαγραφή")
+            update_button = QPushButton("Ενημέρωση")
+
+            # Σύνδεση κουμπιών με τις αντίστοιχες μεθόδους
+            delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
+            update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
+
+            # Προσθήκη κουμπιών στον πίνακα
+            self.table.setCellWidget(row, 8, delete_button)  # Διαγραφή στην στήλη 8
+            self.table.setCellWidget(row, 9, update_button)  # Ενημέρωση στην στήλη 9
+
+            QMessageBox.information(self.parent, "Επιτυχία", "Ο υπάλληλος προστέθηκε επιτυχώς!")
+        except sqlite3.IntegrityError as e:
+            QMessageBox.warning(self.parent, "Σφάλμα", f"Σφάλμα κατά την εισαγωγή: {e}")
+        finally:
+            conn.close()
+
+    def update_member(self, row):
+            # Επιλέγουμε το email και ζητάμε νέα δεδομένα για ενημέρωση
+            email = self.table.item(row, 0).text()  # Το email είναι στην πρώτη στήλη του πίνακα
+
+            column_names = [
+                "Όνομα", "Επώνυμο", "ΑΦΜ", "Αμοιβή", "Τηλέφωνο", "IBAN"
+            ]
+
+            # Περνάμε την parent (QDialog) ως το πρώτο όρισμα
+            column_index, ok = QInputDialog.getInt(
+                self.parent,  # parent πρέπει να είναι το QDialog (δηλαδή self.parent)
+                "Επιλογή Πεδίου", 
+                "Διάλεξε στήλη για ενημέρωση (1-6):\n" + "\n".join([f"{i+1}. {name}" for i, name in enumerate(column_names)]),
+                1, 1, len(column_names)
+            )
+
+            if not ok:
+                return
+
+            column_index -= 1  # Γυρίζει σε zero-based index
+
+            if column_index is None:
+                return
+
+            new_value, ok = QInputDialog.getText(
+                self.parent, "Νέα Τιμή", f"Εισάγετε νέα τιμή για {column_names[column_index]}:"
+            )
+            if not ok or not new_value:
+                return
+
+            # Ελέγχοι για τους περιορισμούς
+            if column_index == 2:  # ΑΦΜ
+                if len(new_value) != 9 or not new_value.isdigit():
+                    QMessageBox.warning(self.parent, "Σφάλμα", "Μη έγκυρο ΑΦΜ. Πρέπει να έχει 9 ψηφία.")
+                    return
+
+            elif column_index == 3:  # Αμοιβή
+                try:
+                    float(new_value)  # Έλεγχος αν η αμοιβή είναι αριθμός
+                    if float(new_value) < 0:
+                        QMessageBox.warning(self.parent, "Σφάλμα", "Η αμοιβή πρέπει να είναι θετικός αριθμός.")
+                        return
+                except ValueError:
+                    QMessageBox.warning(self.parent, "Σφάλμα", "Η αμοιβή πρέπει να είναι αριθμός.")
+                    return
+
+            elif column_index == 4:  # Τηλέφωνο
+                if len(new_value) != 10 or not new_value.isdigit():
+                    QMessageBox.warning(self.parent, "Σφάλμα", "Μη έγκυρο τηλέφωνο. Πρέπει να είναι 10 ψηφία.")
+                    return
+
+            elif column_index == 5:  # IBAN
+                if len(new_value) != 27 or not new_value.startswith('GR'):
+                    QMessageBox.warning(self.parent, "Σφάλμα", "Μη έγκυρο IBAN. Πρέπει να έχει 27 χαρακτήρες και να ξεκινάει με 'GR'.")
+                    return
+
+            # Ενημέρωση της βάσης δεδομένων
+            columns_db = ["όνομα", "επώνυμο", "ΑΦΜ", "αμοιβή", "τηλέφωνο", "IBAN"]
+            conn = sqlite3.connect('database.db')
+            cursor = conn.cursor()
+            try:
+                cursor.execute(
+                    f"""UPDATE {self.table_name} SET {columns_db[column_index]} = ? WHERE email = ?""",
+                    (new_value, email)
+                )
+                conn.commit()
+
+                # Ενημέρωση του πίνακα στην εφαρμογή
+                self.table.setItem(row, column_index + 1, QTableWidgetItem(new_value))
+                QMessageBox.information(self.parent, "Επιτυχία", f"Τα δεδομένα για το email {email} ενημερώθηκαν επιτυχώς.")
+            except sqlite3.Error as e:
+                QMessageBox.critical(self.parent, "Σφάλμα", f"Σφάλμα κατά την ενημέρωση της βάσης: {e}")
+            finally:
+                conn.close()
