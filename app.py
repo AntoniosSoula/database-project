@@ -2,10 +2,6 @@ import sys
 from PyQt6.QtWidgets import QApplication, QDialog
 from PyQt6.uic import loadUi
 
-# Αρχικοί imports
-# Από τη στιγμή που θα κάνουμε καθυστερημένα imports για τις κλάσεις που χρειάζονται
-# δεν χρειάζεται να εισάγουμε τίποτα από πάνω
-
 class Main(QDialog):
     def __init__(self):
         super().__init__()

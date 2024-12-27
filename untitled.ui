@@ -774,7 +774,7 @@ QTabBar::tab:selected {
       </property>
      </widget>
     </widget>
-    <widget class="QWidget" name="tab_3">
+    <widget class="QWidget" name="tabSyndromi">
      <attribute name="title">
       <string>Συνδρομές</string>
      </attribute>
