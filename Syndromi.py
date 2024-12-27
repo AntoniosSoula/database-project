@@ -76,3 +76,6 @@ class Syndromi:
 
             # Ενεργοποίηση του κουμπιού "Πίνακας Μελών"
             self.parent.buttonSyndromh.setEnabled(True)
+
+class MelosPlironeiSyndromi(Syndromi):
+    table_name='ΜΕΛΟΣ_ΠΛΗΡΩΝΕΙ_ΣΥΝΔΡΟΜΗ'
