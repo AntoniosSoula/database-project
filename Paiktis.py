@@ -3,11 +3,11 @@ from PyQt6.QtWidgets import QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout
 from PyQt6.uic import loadUi
 import sqlite3
 from PyQt6.QtCore import QDate
-from Melos import *
-
+from Melos import Melos
 class TeamPaiktis(Melos):
-    table_name="ΠΑΙΚΤΗΣ"
-    table2_name="ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"
+    table_name = "ΠΑΙΚΤΗΣ"
+    table2_name = "ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ"
+
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -21,54 +21,46 @@ class TeamPaiktis(Melos):
             cursor = conn.cursor()
             cursor.execute("PRAGMA foreign_keys = ON;")
             query = f"""
-                    SELECT
-                        "{super().table_name}"."μητρώο_μέλους",
-                        "{super().table_name}"."όνομα", 
-                        "{super().table_name}"."επώνυμο", 
-                        "{super().table_name}"."ημερομηνία_γέννησης", 
-                        "{super().table_name}"."επίπεδο", 
-                        "{super().table_name}"."τηλέφωνο", 
-                        "{super().table_name}"."φύλο", 
-                        "{super().table_name}"."πλήθος_αδελφών",
-                        "{self.table_name}"."RN", 
-                        "{self.table_name}"."Δελτίο_ΑΘλητή", 
-                        "{self.table2_name}"."ήττες", 
-                        "{self.table2_name}"."νίκες", 
-                        "{self.table2_name}"."points", 
-                        "{self.table2_name}"."κατηγορία"
-                    FROM "{self.table_name}"
-                    JOIN "{super().table_name}" 
-                        ON "{self.table_name}"."μητρώο_μέλους" = "{super().table_name}"."μητρώο_μέλους"
-                    JOIN "{self.table2_name}"
-                        ON "{self.table_name}"."μητρώο_μέλους" = "{self.table2_name}"."μητρώο_μέλους"
-        """
+                SELECT
+                    "{super().table_name}"."μητρώο_μέλους", 
+                    "{super().table_name}"."όνομα", 
+                    "{super().table_name}"."επώνυμο", 
+                    "{super().table_name}"."ημερομηνία_γέννησης", 
+                    "{super().table_name}"."επίπεδο", 
+                    "{super().table_name}"."τηλέφωνο", 
+                    "{super().table_name}"."φύλο", 
+                    "{super().table_name}"."πλήθος_αδελφών", 
+                    "{self.table_name}"."RN", 
+                    "{self.table_name}"."Δελτίο_ΑΘλητή", 
+                    "{self.table2_name}"."ήττες", 
+                    "{self.table2_name}"."νίκες", 
+                    "{self.table2_name}"."points", 
+                    "{self.table2_name}"."κατηγορία"
+                FROM "{self.table_name}"
+                JOIN "{super().table_name}" 
+                    ON "{self.table_name}"."μητρώο_μέλους" = "{super().table_name}"."μητρώο_μέλους"
+                JOIN "{self.table2_name}"
+                    ON "{self.table_name}"."μητρώο_μέλους" = "{self.table2_name}"."μητρώο_μέλους"
+            """
             cursor.execute(query)
             rows = cursor.fetchall()
 
-        # Λήψη δυναμικών στηλών
             column_names = [description[0] for description in cursor.description]
-
             conn.close()
 
-        # Ρυθμίσεις για το QTableWidget
             self.table.setRowCount(len(rows))
             self.table.setColumnCount(len(column_names) + 2)  # +2 για τις στήλες Διαγραφή και Ενημέρωση
             self.table.setHorizontalHeaderLabels(column_names + ["Διαγραφή", "Ενημέρωση"])
 
-# Ρύθμιση των κελιών με τα νέα δεδομένα
             for row in range(len(rows)):
                 for column, value in enumerate(rows[row]):
                     self.table.setItem(row, column, QTableWidgetItem(str(value)))
 
-            # Δημιουργία κουμπιών "Διαγραφή" και "Ενημέρωση" για τη νέα γραμμή
+                # Προσθήκη κουμπιών "Διαγραφή" και "Ενημέρωση"
                 delete_button = QPushButton("Διαγραφή")
                 update_button = QPushButton("Ενημέρωση")
-
-                delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
-                update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
-
-                self.table.setCellWidget(row, len(column_names), delete_button)  # Διαγραφή στην στήλη 12
-                self.table.setCellWidget(row, len(column_names) + 1, update_button)  # Ενημέρωση στην στήλη 13
+                self.table.setCellWidget(row, len(column_names), delete_button)
+                self.table.setCellWidget(row, len(column_names) + 1, update_button)
 
             layout = self.parent.tabMeli.layout()
             if layout is None:
@@ -78,6 +70,7 @@ class TeamPaiktis(Melos):
             layout.addWidget(self.table)
             layout.addWidget(self.backButton)
             self.table_shown = True
+
             self.addButton = QPushButton("Προσθήκη Παίκτη της Ομάδας")
             self.addButton.setStyleSheet(self.Buttonstylesheet)
             self.addButton.clicked.connect(self.add_member)

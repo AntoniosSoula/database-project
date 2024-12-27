@@ -5,25 +5,16 @@ import sqlite3
 from PyQt6.QtCore import QDate
 
 
+
 # Κλάση για τη διαχείριση των μελών
 class Melos:
-    table_name='ΜΕΛΟΣ'
+    table_name = 'ΜΕΛΟΣ'
+
     def __init__(self, parent):
         self.parent = parent
         self.table = None
         self.table_shown = False
-        self.Buttonstylesheet = self.load_stylesheet("Buttonstyle.txt")
-        self.backButton = QPushButton("Επιστροφή")
-        self.backButton.setStyleSheet(self.Buttonstylesheet)
-        self.backButton.clicked.connect(self.go_back)
 
-    def load_stylesheet(self, style):
-        try:
-            with open(style, "r") as f:
-                return f.read()
-        except Exception as e:
-            print(f"Error loading stylesheet: {e}")
-            return None
     def show_table(self):
         if self.table_shown:
             self.table.setParent(None)  # Αφαιρούμε τον πίνακα αν έχει εμφανιστεί ήδη
@@ -38,47 +29,29 @@ class Melos:
         rows = cursor.fetchall()
         conn.close()
 
-        # Ρυθμίσεις του πίνακα
         self.table.setRowCount(len(rows))
-        self.table.setColumnCount(10)  # 10 στήλες (συμπεριλαμβανομένων Διαγραφή και Ενημέρωση)
+        self.table.setColumnCount(10)
         self.table.setHorizontalHeaderLabels(
-            ["Μητρώο Μέλους", "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", 
-            "Επίπεδο", "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών", "Διαγραφή", "Ενημέρωση"]
+            ["Μητρώο Μέλους", "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", "Επίπεδο", "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών", "Διαγραφή", "Ενημέρωση"]
         )
 
-        # Γεμίζουμε τον πίνακα με δεδομένα
         for row, row_data in enumerate(rows):
             for column, value in enumerate(row_data):
                 self.table.setItem(row, column, QTableWidgetItem(str(value)))
 
-            # Δημιουργία κουμπιού για Διαγραφή και Ενημέρωση για κάθε γραμμή
+            # Προσθήκη κουμπιών για διαγραφή και ενημέρωση
             delete_button = QPushButton("Διαγραφή")
             update_button = QPushButton("Ενημέρωση")
+            self.table.setCellWidget(row, 8, delete_button)
+            self.table.setCellWidget(row, 9, update_button)
 
-            # Σύνδεση των κουμπιών με τις αντίστοιχες μεθόδους
-            delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
-            update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
-
-            # Προσθήκη κουμπιών στον πίνακα
-            self.table.setCellWidget(row, 8, delete_button)  # Διαγραφή στην στήλη 8
-            self.table.setCellWidget(row, 9, update_button)  # Ενημέρωση στην στήλη 9
-
-        # Προσθήκη του πίνακα στο tabMeli μόνο αν δεν έχει ήδη προστεθεί
         layout = self.parent.tabMeli.layout()
         if layout is None:
             layout = QVBoxLayout()
             self.parent.tabMeli.setLayout(layout)
 
         layout.addWidget(self.table)
-        layout.addWidget(self.backButton)
         self.table_shown = True
-
-        # Δημιουργία και σύνδεση του κουμπιού για προσθήκη νέου μέλους
-        self.addButton = QPushButton("Προσθήκη Μέλους")
-        self.addButton.setStyleSheet(self.Buttonstylesheet)
-        self.addButton.clicked.connect(self.add_member)
-        layout.addWidget(self.addButton)
-
     def add_member(self):
         # Λήψη του επόμενου μητρώου
         new_member_id = self.get_next_member_id()
@@ -305,3 +278,10 @@ class Melos:
             
             # Enable the button again
             self.parent.buttonTableMeli.setEnabled(True)
+    def __init__(self, parent):
+        # Αντί για "show_table", κάνε τη σύνδεση στο κουμπί "Πίνακας Συνδρομητών"
+        self.show_button.clicked.connect(self.show_subscription_table)
+
+    def show_subscription_table(self):
+        syndromi = Syndromi(self.parent)  # Δημιουργία αντικειμένου Syndromi
+        syndromi.show_subscription_table()  # Εμφάνιση του πίνακα συνδρομητών
