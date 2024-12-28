@@ -2,6 +2,7 @@ import sys
 from PyQt6.QtWidgets import QApplication, QDialog
 from PyQt6.uic import loadUi
 
+
 class Main(QDialog):
     def __init__(self):
         super().__init__()

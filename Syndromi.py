@@ -3,6 +3,7 @@ import sqlite3
 from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QPushButton, QVBoxLayout, QMessageBox, QInputDialog
 from PyQt6.QtCore import Qt
 from Melos import *
+from PyQt6.QtGui import QColor
 class Syndromi:
     table_name = 'ΣΥΝΔΡΟΜΗ'  # Ή το σωστό όνομα πίνακα για τους συνδρομητές
 
@@ -104,7 +105,7 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
         "{Melos.table_name}"."όνομα",
         "{Melos.table_name}"."επώνυμο",
         "{Syndromi.table_name}"."τρόπος πληρωμής",
-        "{Syndromi.table_name}"."πακέτo συνδρομής",20*(
+        "{Syndromi.table_name}"."πακέτο συνδρομής",20*(
         0.8*("{self.table_name}"."κωδικός συνδρομής"=1 OR "{self.table_name}"."κωδικός συνδρομής"=6) +
         0.7*("{self.table_name}"."κωδικός συνδρομής"=2 OR "{self.table_name}"."κωδικός συνδρομής"=7) +
         1.1*("{self.table_name}"."κωδικός συνδρομής"=3 OR "{self.table_name}"."κωδικός συνδρομής"=8) +
@@ -122,6 +123,9 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
         "{Syndromi.table_name}"
     ON 
         "{Syndromi.table_name}"."κωδικός συνδρομής" = "{self.table_name}"."κωδικός συνδρομής"
+    ORDER BY 
+        CAST(SUBSTR("{self.table_name}"."ημερομηνία πληρωμής", 4, 4) AS INTEGER) DESC,
+        CAST(SUBSTR("{self.table_name}"."ημερομηνία πληρωμής", 1, 2) AS INTEGER) DESC   
 """)
 
         if self.table_shown:
@@ -171,6 +175,10 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
         self.addButton.setStyleSheet(self.Buttonstylesheet)
         self.addButton.clicked.connect(self.add_subscription)
         layout.addWidget(self.addButton)
+        self.debtsButton = QPushButton("Πίνακας Οφειλών")
+        self.debtsButton.setStyleSheet(self.Buttonstylesheet)
+        self.debtsButton.clicked.connect(self.show_debts_table)
+        layout.addWidget(self.debtsButton)
 
     def delete_entry(self, row):
         # Υλοποίηση διαγραφής εγγραφής από τη βάση και το UI
@@ -179,3 +187,86 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
     def add_subscription(self):
         # Υλοποίηση προσθήκης νέας εγγραφής στη βάση και το UI
         pass
+    def show_debts_table(self):
+        self.backButton = QPushButton("Επιστροφή")
+        self.backButton.setStyleSheet(self.Buttonstylesheet)
+        self.backButton.clicked.connect(self.go_back)
+        query = (f"""SELECT "{Melos.table_name}"."μητρώο_μέλους",
+                        "{Melos.table_name}"."όνομα",
+                        "{Melos.table_name}"."επώνυμο",
+                        "{Syndromi.table_name}"."τρόπος πληρωμής",
+                        "{Syndromi.table_name}"."πακέτο συνδρομής",
+                        20*(
+                            0.8*("{self.table_name}"."κωδικός συνδρομής"=1 OR "{self.table_name}"."κωδικός συνδρομής"=6) +
+                            0.7*("{self.table_name}"."κωδικός συνδρομής"=2 OR "{self.table_name}"."κωδικός συνδρομής"=7) +
+                            1.1*("{self.table_name}"."κωδικός συνδρομής"=3 OR "{self.table_name}"."κωδικός συνδρομής"=8) +
+                            0.6*("{self.table_name}"."κωδικός συνδρομής"=4 OR "{self.table_name}"."κωδικός συνδρομής"=9) +
+                            1*("{self.table_name}"."κωδικός συνδρομής"=5 OR "{self.table_name}"."κωδικός συνδρομής"=10)
+                        ) AS "ποσό",
+                        MAX("{self.table_name}"."ημερομηνία πληρωμής") AS "τελευταία πληρωμή"
+                    FROM "{self.table_name}"
+                    JOIN "{Melos.table_name}"
+                    ON "{Melos.table_name}"."μητρώο_μέλους" = "{self.table_name}"."μητρώο_μέλους"
+                    JOIN "{Syndromi.table_name}"
+                    ON "{Syndromi.table_name}"."κωδικός συνδρομής" = "{self.table_name}"."κωδικός συνδρομής"
+                    GROUP BY "{Melos.table_name}"."μητρώο_μέλους",
+                            "{Melos.table_name}"."όνομα",
+                            "{Melos.table_name}"."επώνυμο",
+                            "{Syndromi.table_name}"."τρόπος πληρωμής",
+                            "{Syndromi.table_name}"."πακέτο συνδρομής"
+                    ORDER BY 
+                        CAST(SUBSTR(MAX("{self.table_name}"."ημερομηνία πληρωμής"), 4, 4) AS INTEGER) DESC,
+                        CAST(SUBSTR(MAX("{self.table_name}"."ημερομηνία πληρωμής"), 1, 2) AS INTEGER) DESC
+                """)
+
+        # Καθαρισμός του layout του tabSyndromi
+        layout = self.parent.tabSyndromi.layout()
+        if layout is not None:
+            while layout.count():
+                child = layout.takeAt(0)
+                if child.widget():
+                    child.widget().deleteLater()
+
+        # Δημιουργούμε έναν νέο πίνακα
+        self.table = QTableWidget()
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA foreign_keys = ON;")
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        conn.close()
+
+        # Ρυθμίσεις του πίνακα
+        self.table.setRowCount(len(rows))
+        self.table.setColumnCount(8)  # 8 στήλες
+        self.table.setHorizontalHeaderLabels([
+            "Μητρώο Μέλους", "Όνομα", "Επώνυμο", "Τρόπος Πληρωμής",
+            "Πακέτο Συνδρομής", "Ποσό", "Τελευταία Πληρωμή", "Κατάσταση"
+        ])
+
+        # Χρωματισμός γραμμών και συμπλήρωση δεδομένων
+        from datetime import datetime
+        today = datetime.today().strftime("%m-%Y")  # Λήψη τρέχοντος μήνα και έτους (π.χ., "09-2024")
+
+        for row_idx, row_data in enumerate(rows):
+            has_paid = row_data[-1].endswith(today)  # Έλεγχος αν η ημερομηνία πληρωμής είναι αυτόν τον μήνα
+            color = QColor("green") if has_paid else QColor("red")  # Χρήση QColor για το χρώμα
+
+            for col_idx, value in enumerate(row_data):
+                item = QTableWidgetItem(str(value))
+                item.setBackground(color)  # Ορίζει το χρώμα του κελιού
+                self.table.setItem(row_idx, col_idx, item)
+
+            # Κατάσταση: "Πληρωμένο" ή "Οφειλή"
+            status = "Πληρωμένο" if has_paid else "Οφειλή"
+            status_item = QTableWidgetItem(status)
+            status_item.setBackground(color)
+            self.table.setItem(row_idx, 7, status_item)  # Στήλη Κατάσταση
+
+        # Προσθήκη του πίνακα και του κουμπιού "Επιστροφή"
+        layout.addWidget(self.table)
+
+        # Προσθέτουμε ξανά το κουμπί "Επιστροφή"
+        layout.addWidget(self.backButton)
+
+        self.table_shown = True
