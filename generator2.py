@@ -86,7 +86,7 @@ def match_members_with_subcriptions(subscriptions,members):
     return member_subscription
 def melos_plironei_sindromi_generator(matching_table, num):
     member_pays_subscription = []
-    months = ('ΣΕΠΤΕΜΒΡΙΟΣ', 'ΟΚΤΩΒΡΙΟΣ', 'ΝΟΕΜΒΡΙΟΣ', 'ΔΕΚΕΜΒΡΙΟΣ')
+    months = ('09', '10', '11', '12')
     year = 2024  # Προκαθορισμένο έτος
     match_counts = {}  # Λεξικό για να παρακολουθεί πόσες φορές χρησιμοποιείται κάθε match
 
@@ -115,7 +115,7 @@ def melos_plironei_sindromi_generator(matching_table, num):
             month = random.choice(months)  # Αν ξεπεραστούν οι μήνες, επιλέγουμε τυχαία
 
         # Προσθήκη του έτους μαζί με τον μήνα
-        month_year = f"{month} {year}"
+        month_year = f"{month}-{year}"
 
         member_pays_subscription.append([member, subscription, month_year])
 

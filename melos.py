@@ -54,7 +54,8 @@ class Melos:
             # Δημιουργία κουμπιού για Διαγραφή και Ενημέρωση για κάθε γραμμή
             delete_button = QPushButton("Διαγραφή")
             update_button = QPushButton("Ενημέρωση")
-
+            delete_button.setStyleSheet(self.Buttonstylesheet)
+            update_button.setStyleSheet(self.Buttonstylesheet)
             # Σύνδεση των κουμπιών με τις αντίστοιχες μεθόδους
             delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
             update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
