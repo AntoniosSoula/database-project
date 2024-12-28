@@ -181,8 +181,61 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
         layout.addWidget(self.debtsButton)
 
     def delete_entry(self, row):
-        # Υλοποίηση διαγραφής εγγραφής από τη βάση και το UI
-        pass
+        item = self.table.item(row, 0)
+        if item is None:  # Έλεγχος αν το κελί είναι κενό
+            QMessageBox.warning(self.parent, "Σφάλμα", "Δεν βρέθηκε το στοιχείο για διαγραφή.")
+            return
+
+        member_id = item.text()
+        date_item = self.table.item(row, 6)
+        payment_method_item = self.table.item(row, 3)
+        subscription_package_item = self.table.item(row, 4)
+
+        if payment_method_item is None or subscription_package_item is None:
+            QMessageBox.warning(self.parent, "Σφάλμα", "Δεν βρέθηκαν τα στοιχεία τρόπου πληρωμής ή πακέτου συνδρομής.")
+            return
+        if date_item is None:
+            QMessageBox.warning(self.parent, "Σφάλμα", "Δεν βρέθηκε ημερομηνία πληρωμής.")
+            return
+
+        payment_method = payment_method_item.text()
+        subscription_package = subscription_package_item.text()
+        date = date_item.text()
+
+        # Αναζήτηση του ID της συνδρομής στη βάση δεδομένων
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT "κωδικός συνδρομής" 
+                FROM "ΣΥΝΔΡΟΜΗ" 
+                WHERE "τρόπος πληρωμής" = ? AND "πακέτο συνδρομής" = ?
+            """, (payment_method, subscription_package))
+            result = cursor.fetchone()
+
+            if result is None:
+                QMessageBox.warning(self.parent, "Σφάλμα", "Δεν βρέθηκε συνδρομή με τα δεδομένα που δώσατε.")
+                return
+
+            syndromi_id = result[0]
+
+            # Διαγραφή της καταχώρησης
+            cursor.execute("""
+                DELETE FROM "ΜΕΛΟΣ_ΠΛΗΡΩΝΕΙ_ΣΥΝΔΡΟΜΗ"
+                WHERE "κωδικός συνδρομής" = ? AND "μητρώο_μέλους" = ? AND "ημερομηνία πληρωμής" = ?
+            """, (syndromi_id, member_id, date))
+            conn.commit()
+
+            # Ενημέρωση του πίνακα στο UI
+            self.table.removeRow(row)
+            QMessageBox.information(self.parent, "Επιτυχία", "Η καταχώρηση διαγράφηκε με επιτυχία.")
+
+        except sqlite3.Error as e:
+            QMessageBox.critical(self.parent, "Σφάλμα", f"Σφάλμα κατά τη διαγραφή: {e}")
+            conn.rollback()
+
+        finally:
+            conn.close()
 
     def add_subscription(self):
         # Υλοποίηση προσθήκης νέας εγγραφής στη βάση και το UI
