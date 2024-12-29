@@ -6,6 +6,7 @@ from PyQt6.QtGui import QColor
 import re
 from Prosopiko import *
 from Melos import *
+from datetime import datetime
 class ProponitisProponeiMelos(Prosopiko, Melos):
     table_name = 'ΠΡΟΠΟΝΗΤΗΣ_ΠΡΟΠΟΝΕΙ_ΜΕΛΟΣ'
 
@@ -81,13 +82,21 @@ class ProponitisProponeiMelos(Prosopiko, Melos):
         if layout is None:
             layout = QVBoxLayout()
             self.parent.tabParousiologio.setLayout(layout)
-
+        for i in reversed(range(layout.count())):
+            widget = layout.itemAt(i).widget()
+            if isinstance(widget, QPushButton) and widget.text() in ["Προηγούμενη Σελίδα", "Επόμενη Σελίδα", "Προσθήκη Παρουσίας"]:
+                layout.takeAt(i).widget().deleteLater()
         layout.addWidget(self.table)
 
         # Κουμπιά πλοήγησης
         self.add_navigation_buttons(layout)
+        self.addButton = QPushButton("Προσθήκη Παρουσίας")
+        self.addButton.setStyleSheet(self.Buttonstylesheet)
+        self.addButton.clicked.connect(self.add_presence)
+        layout.addWidget(self.addButton)
 
         layout.addWidget(self.backButton)
+
         self.table_shown = True
 
     def add_navigation_buttons(self, layout):
@@ -109,6 +118,7 @@ class ProponitisProponeiMelos(Prosopiko, Melos):
 
         layout.addWidget(prev_button)
         layout.addWidget(next_button)
+
 
     def prev_page(self):
         if self.current_page > 0:
@@ -177,8 +187,7 @@ class ProponitisProponeiMelos(Prosopiko, Melos):
                 combo_box.addItem(email[0])
         except sqlite3.Error as e:
             QMessageBox.critical(self.parent, "Σφάλμα", f"Σφάλμα κατά τη φόρτωση των email: {e}")
-        finally:
-            conn.close()
+            return
 
         layout.addWidget(combo_box)
 
@@ -186,7 +195,6 @@ class ProponitisProponeiMelos(Prosopiko, Melos):
         confirm_button = QPushButton("Επιλογή", dialog)
         layout.addWidget(confirm_button)
 
-        # Σύνδεση του κουμπιού με τη λήψη του επιλεγμένου email
         def confirm():
             email = combo_box.currentText()
             if not email:
@@ -204,82 +212,104 @@ class ProponitisProponeiMelos(Prosopiko, Melos):
             return
 
         # Συνεχίζουμε με τα υπόλοιπα δεδομένα
-        name, ok2 = QInputDialog.getText(self.parent, "Όνομα", "Εισάγετε το όνομα του υπαλλήλου:")
-        if not ok2 or not name:
+        member_id, ok2 = QInputDialog.getText(self.parent, "Μητρώο Μέλους", "Εισάγετε Μητρώο Μέλους:")
+        if not ok2 or not member_id:
+            return
+        try:
+            cursor.execute(f"""SELECT "{Melos.table_name}"."όνομα", "{Melos.table_name}"."επώνυμο"
+                            FROM "{Melos.table_name}" WHERE "{Melos.table_name}"."μητρώο_μέλους" = ?""", (member_id,))
+            member_data = cursor.fetchone()
+            if not member_data:
+                QMessageBox.warning(self.parent, "Σφάλμα", "Το μέλος δεν βρέθηκε.")
+                return
+            name, surname = member_data
+        except sqlite3.Error as e:
+            QMessageBox.critical(self.parent, "Σφάλμα", f"Σφάλμα κατά τη φόρτωση Μέλους: {e}")
             return
 
-        surname, ok3 = QInputDialog.getText(self.parent, "Επώνυμο", "Εισάγετε το επώνυμο του υπαλλήλου:")
-        if not ok3 or not surname:
+        date, ok = QInputDialog.getText(self.parent, "Ημερομηνία Παρουσίας", "Εισάγετε την ημερομηνία παρουσίας (YYYY-MM-dd):")
+        if not ok or not date:
+            QMessageBox.warning(self.parent, "Ακύρωση", "Δεν εισάγατε ημερομηνία παρουσίας.")
             return
 
-        afm, ok4 = QInputDialog.getText(self.parent, "ΑΦΜ", "Εισάγετε το ΑΦΜ (9 ψηφία):")
-        if not ok4 or not (len(afm) == 9 and afm.isdigit()):
-            QMessageBox.warning(self.parent, "Σφάλμα", "Το ΑΦΜ πρέπει να αποτελείται από 9 ψηφία.")
+        # Έλεγχος μορφής ημερομηνίας
+        if not re.match(r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$", date):
+            QMessageBox.warning(self.parent, "Σφάλμα", "Η ημερομηνία παρουσίας πρέπει να είναι στη μορφή YYYY-MM-dd.")
             return
 
-        salary, ok5 = QInputDialog.getDouble(self.parent, "Αμοιβή", "Εισάγετε την αμοιβή:", 0, 0)
-        if not ok5:
+        try:
+            presence_date = datetime.strptime(date, "%Y-%m-%d")
+            if presence_date > datetime.now():
+                QMessageBox.warning(self.parent, "Σφάλμα", "Η ημερομηνία παρουσίας δεν μπορεί να είναι στο μέλλον.")
+                return
+        except ValueError:
+            QMessageBox.warning(self.parent, "Σφάλμα", "Η ημερομηνία παρουσίας είναι μη έγκυρη.")
             return
 
-        phone, ok6 = QInputDialog.getText(self.parent, "Τηλέφωνο", "Εισάγετε το τηλέφωνο (10 ψηφία):")
-        if not ok6 or not (len(phone) == 10 and phone.isdigit()):
-            QMessageBox.warning(self.parent, "Σφάλμα", "Το τηλέφωνο πρέπει να αποτελείται από 10 ψηφία.")
-            return
-
-        iban, ok7 = QInputDialog.getText(self.parent, "IBAN", "Εισάγετε το IBAN (27 χαρακτήρες, ξεκινά με 'GR'):")
-        if not ok7 or not (len(iban) == 27 and iban.startswith('GR')):
-            QMessageBox.warning(self.parent, "Σφάλμα", "Το IBAN πρέπει να έχει 27 χαρακτήρες και να ξεκινά με 'GR'.")
-            return
-
-        employment, ok8 = QInputDialog.getItem(
+        situation, ok8 = QInputDialog.getItem(
             self.parent,
-            "Απασχόληση",
-            "Επιλέξτε τον τύπο απασχόλησης:",
-            ["Γραμματέας", "Προπονητής"],
+            "Κατάσταση",
+            "Επιλέξτε αν ήταν ΠΑΡΩΝ/ΟΥΣΑ ή ΑΠΩΝ/ΟΥΣΑ:",
+            ["ΠΑΡΩΝ/ΟΥΣΑ", "ΑΠΩΝ/ΟΥΣΑ"],
             0,
             False
         )
         if not ok8:
             return
 
-        # Εισαγωγή δεδομένων στη βάση
-        conn = sqlite3.connect('database.db')
-        cursor = conn.cursor()
         try:
+            # Εισαγωγή εγγραφής στη βάση δεδομένων
             cursor.execute(f"""
-                INSERT INTO {self.table_name} (email, ΑΦΜ, αμοιβή, τηλέφωνο, όνομα, επώνυμο, IBAN)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (email, afm, salary, phone, name, surname, iban))
-
-            if employment == "Προπονητής":
-                cursor.execute(f"""INSERT INTO {self.table2_name} (email) VALUES (?)""", (email,))
-            elif employment == "Γραμματέας":
-                cursor.execute(f"""INSERT INTO {self.table3_name} (email) VALUES (?)""", (email,))
-
+                INSERT INTO {self.table_name} (email, "μητρώο_μέλους", "κατάσταση", "ημερομηνία προπόνησης")
+                VALUES (?, ?, ?, ?)
+            """, (email, member_id, situation, date))
             conn.commit()
 
-            # Ενημέρωση του πίνακα στο UI
-            row = self.table.rowCount()
-            self.table.insertRow(row)
-            self.table.setItem(row, 0, QTableWidgetItem(email))
-            self.table.setItem(row, 1, QTableWidgetItem(name))
-            self.table.setItem(row, 2, QTableWidgetItem(surname))
-            self.table.setItem(row, 3, QTableWidgetItem(afm))
-            self.table.setItem(row, 4, QTableWidgetItem(f"{salary:.2f}"))
-            self.table.setItem(row, 5, QTableWidgetItem(phone))
-            self.table.setItem(row, 6, QTableWidgetItem(iban))
-            self.table.setItem(row, 7, QTableWidgetItem(employment))
+            # Φόρτωση της νέας εγγραφής από τη βάση
+            cursor.execute(f"""
+                SELECT "{self.table_name}"."email",
+                    "{self.table_name}"."μητρώο_μέλους",
+                    "{Melos.table_name}"."όνομα",
+                    "{Melos.table_name}"."επώνυμο",
+                    "{self.table_name}"."ημερομηνία προπόνησης",
+                    "{self.table_name}"."κατάσταση"
+                FROM "{self.table_name}"
+                JOIN "{Melos.table_name}"
+                ON "{Melos.table_name}"."μητρώο_μέλους" = "{self.table_name}"."μητρώο_μέλους"
+                WHERE "{self.table_name}"."email" = ? AND "{self.table_name}"."μητρώο_μέλους" = ? 
+                AND "{self.table_name}"."ημερομηνία προπόνησης" = ?
+            """, (email, member_id, date))
+            new_row_data = cursor.fetchone()
+            if not new_row_data:
+                QMessageBox.warning(self.parent, "Σφάλμα", "Η νέα εγγραφή δεν βρέθηκε για προσθήκη στον πίνακα.")
+                return
 
-            delete_button = QPushButton("Διαγραφή")
-            update_button = QPushButton("Ενημέρωση")
+            # Υπολογισμός της σωστής θέσης εισαγωγής
+            all_data_query = f"""
+                SELECT "{self.table_name}"."ημερομηνία προπόνησης"
+                FROM "{self.table_name}"
+                ORDER BY "{self.table_name}"."ημερομηνία προπόνησης" DESC
+            """
+            cursor.execute(all_data_query)
+            all_dates = [datetime.strptime(row[0], "%Y-%m-%d") for row in cursor.fetchall()]
+            new_index = all_dates.index(presence_date) if presence_date in all_dates else -1
 
-            delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
-            update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
+            if self.current_page * self.rows_per_page <= new_index < (self.current_page + 1) * self.rows_per_page:
+                # Αν ανήκει στην τρέχουσα σελίδα, προσθέτουμε
+                row_position = new_index % self.rows_per_page
+                self.table.insertRow(row_position)
 
-            self.table.setCellWidget(row, 8, delete_button)
-            self.table.setCellWidget(row, 9, update_button)
+                # Τοποθέτηση δεδομένων στη νέα γραμμή
+                for col_idx, value in enumerate(new_row_data):
+                    self.table.setItem(row_position, col_idx, QTableWidgetItem(str(value)))
 
-            QMessageBox.information(self.parent, "Επιτυχία", "Ο υπάλληλος προστέθηκε επιτυχώς!")
+                # Δημιουργία κουμπιού διαγραφής
+                delete_button = QPushButton("Διαγραφή")
+                delete_button.setStyleSheet(self.Buttonstylesheet)
+                delete_button.clicked.connect(lambda checked, row=row_position: self.delete_entry(row))
+                self.table.setCellWidget(row_position, 6, delete_button)
+
+            QMessageBox.information(self.parent, "Επιτυχία", "Η παρουσία προστέθηκε επιτυχώς!")
         except sqlite3.IntegrityError as e:
             QMessageBox.warning(self.parent, "Σφάλμα", f"Σφάλμα κατά την εισαγωγή: {e}")
         finally:

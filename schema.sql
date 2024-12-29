@@ -237,5 +237,8 @@ VALUES
 ('Κάρτα', 'Παίκτης της Ομάδας', 9),
 ('Κάρτα', 'Κανονικη', 10);
 
-
+CREATE INDEX idx_proponisi_date ON ΠΡΟΠΟΝΗΤΗΣ_ΠΡΟΠΟΝΕΙ_ΜΕΛΟΣ("ημερομηνία προπόνησης");
+CREATE INDEX idx_member_id ON ΠΡΟΠΟΝΗΤΗΣ_ΠΡΟΠΟΝΕΙ_ΜΕΛΟΣ("μητρώο_μέλους");
+CREATE INDEX idx_email ON ΠΡΟΠΟΝΗΤΗΣ_ΠΡΟΠΟΝΕΙ_ΜΕΛΟΣ(email);
+CREATE INDEX idx_situation ON ΠΡΟΠΟΝΗΤΗΣ_ΠΡΟΠΟΝΕΙ_ΜΕΛΟΣ("κατάσταση");
 COMMIT;

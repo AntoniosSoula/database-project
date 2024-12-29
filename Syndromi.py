@@ -172,7 +172,7 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
         layout.addWidget(self.backButton)
         self.table_shown = True
 
-        # Δημιουργία και σύνδεση του κουμπιού για προσθήκη νέας εγγραφής
+        # Δημιουργία και σύνδεση του  για προσθήκη νέας εγγραφής
         self.addButton = QPushButton("Προσθήκη Πληρωμής")
         self.addButton.setStyleSheet(self.Buttonstylesheet)
         self.addButton.clicked.connect(self.add_payment)
