@@ -14,6 +14,7 @@ class Main(QDialog):
         self.subscription = None  # Προσθήκη της νέας μεταβλητής για το συνδρομητή
         self.employers=None
         self.melosplironeisyndromi=None
+        self.proponitisproponeimelos=None
         # Συνδέουμε τα κουμπιά με τις αντίστοιχες μεθόδους
         self.buttonTableMeli.clicked.connect(self.show_member_table)
         self.buttonTablePaiktis.clicked.connect(self.show_teampaiktis_table)
@@ -23,12 +24,17 @@ class Main(QDialog):
         self.buttonTablePaidPaiktis.clicked.connect(self.show_paid_paiktis_table)
         self.buttonTableProsopiko.clicked.connect(self.show_employees_table)
         self.buttonPliromon.clicked.connect(self.show_melos_plironei_syndromi_table)
+        self.buttonParousiologio.clicked.connect(self.show_proponitis_proponei_melos)
     def show_member_table(self):
         from Melos import Melos  # Καθυστερημένη εισαγωγή
         if self.melos is None:
             self.melos = Melos(self)
         self.melos.show_table()
-
+    def show_proponitis_proponei_melos(self):
+        from Parousiologio import ProponitisProponeiMelos
+        if self.proponitisproponeimelos is None:
+            self.proponitisproponeimelos=ProponitisProponeiMelos(self)
+        self.proponitisproponeimelos.show_table()
     def show_teampaiktis_table(self):
         from Paiktis import TeamPaiktis  # Καθυστερημένη εισαγωγή
         if self.playerInTeam is None:

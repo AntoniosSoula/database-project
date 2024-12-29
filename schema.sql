@@ -107,6 +107,7 @@ CREATE TABLE IF NOT EXISTS "ΠΡΟΠΟΝΗΤΗΣ_ΠΡΟΠΟΝΕΙ_ΜΕΛΟΣ" (
     "email" VARCHAR DEFAULT NULL CHECK ("email" GLOB '*@*.*'),
     "ημερομηνία προπόνησης" DATE,
     "κατάσταση" VARCHAR CHECK ("κατάσταση" IN ('ΑΠΩΝ/ΟΥΣΑ','ΠΑΡΩΝ/ΟΥΣΑ')),
+    PRIMARY KEY("μητρώο_μέλους","email","ημερομηνία προπόνησης"),
     FOREIGN KEY ("μητρώο_μέλους") REFERENCES "ΜΕΛΟΣ" ("μητρώο_μέλους")
         ON DELETE SET DEFAULT 
         ON UPDATE CASCADE,
