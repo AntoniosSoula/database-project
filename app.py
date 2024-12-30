@@ -7,6 +7,7 @@ class Main(QDialog):
     def __init__(self):
         super().__init__()
         loadUi("untitled.ui", self)
+        self.setFixedSize(self.size())
         self.melos = None  # Αρχικοποιούμε το στιγμιότυπο της κλάσης Meli
         self.playerInTeam = None
         self.playerNoInTeam = None

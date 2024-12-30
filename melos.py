@@ -1,9 +1,9 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout, QPushButton, QMessageBox,QInputDialog,QLineEdit
+from PyQt6.QtWidgets import QTableWidgetItem, QTableWidget, QTableWidgetItem, QVBoxLayout, QPushButton, QMessageBox,QInputDialog,QLineEdit
 from PyQt6.uic import loadUi
 import sqlite3
 from PyQt6.QtCore import QDate
-
+from PyQt6.QtCore import Qt
 
 # Κλάση για τη διαχείριση των μελών
 class Melos:
@@ -52,8 +52,9 @@ class Melos:
         # Γεμίζουμε τον πίνακα με δεδομένα
         for row, row_data in enumerate(rows):
             for column, value in enumerate(row_data):
-                self.table.setItem(row, column, QTableWidgetItem(str(value)))
-
+                item = QTableWidgetItem(str(value))
+                item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)  # Μη επεξεργάσιμο στοιχείο
+                self.table.setItem(row, column, item)
             # Δημιουργία κουμπιού για Διαγραφή και Ενημέρωση για κάθε γραμμή
             delete_button = QPushButton("Διαγραφή")
             update_button = QPushButton("Ενημέρωση")
@@ -276,9 +277,10 @@ class Melos:
         )
         conn.commit()
         conn.close()
-
-        # Ενημέρωση του πίνακα στην εφαρμογή
-        self.table.setItem(row, column_index + 1, QTableWidgetItem(new_value))
+                
+        item = QTableWidgetItem(new_value)
+        item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+        self.table.setItem(row, column_index + 1, item)
         print(f"Το μέλος με μητρώο {member_id} ενημερώθηκε.")
 
     def get_next_member_id(self):
@@ -337,7 +339,9 @@ class Melos:
 
         for row in range(len(rows)):
             for column, value in enumerate(rows[row]):
-                self.table.setItem(row, column, QTableWidgetItem(str(value)))
+                item = QTableWidgetItem(str(value))
+                item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)  # Μη επεξεργάσιμο στοιχείο
+                self.table.setItem(row, column, item)
 
             delete_button = QPushButton("Διαγραφή")
             update_button = QPushButton("Ενημέρωση")

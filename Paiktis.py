@@ -76,6 +76,65 @@ class TeamPaiktis(Melos):
             self.addButton.setStyleSheet(self.Buttonstylesheet)
             self.addButton.clicked.connect(self.add_member)
             layout.addWidget(self.addButton)
+    def search_member(self):
+        
+        search_text = self.searchBar.text()
+
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        query = f"""
+                SELECT
+                    "{super().table_name}"."μητρώο_μέλους", 
+                    "{super().table_name}"."όνομα", 
+                    "{super().table_name}"."επώνυμο", 
+                    "{super().table_name}"."ημερομηνία_γέννησης", 
+                    "{super().table_name}"."επίπεδο", 
+                    "{super().table_name}"."τηλέφωνο", 
+                    "{super().table_name}"."φύλο", 
+                    "{super().table_name}"."πλήθος_αδελφών", 
+                    "{self.table_name}"."RN", 
+                    "{self.table_name}"."Δελτίο_ΑΘλητή", 
+                    "{self.table2_name}"."ήττες", 
+                    "{self.table2_name}"."νίκες", 
+                    "{self.table2_name}"."points", 
+                    "{self.table2_name}"."κατηγορία"
+                FROM "{self.table_name}"
+                JOIN "{super().table_name}" 
+                    ON "{self.table_name}"."μητρώο_μέλους" = "{super().table_name}"."μητρώο_μέλους"
+                JOIN "{self.table2_name}"
+                    ON "{self.table_name}"."μητρώο_μέλους" = "{self.table2_name}"."μητρώο_μέλους"
+                WHERE "{super().table_name}"."μητρώο_μέλους" LIKE ? OR
+                    "{super().table_name}"."όνομα" LIKE ? OR "{super().table_name}"."επώνυμο" LIKE ? OR
+                    "{super().table_name}"."ημερομηνία_γέννησης" LIKE ? OR
+                    "{super().table_name}"."επίπεδο" LIKE ? OR
+                    "{super().table_name}"."τηλέφωνο" LIKE ? OR
+                    "{super().table_name}"."φύλο" LIKE ? OR
+                    "{self.table_name}"."RN" LIKE ? OR
+                     "{self.table2_name}"."κατηγορία" LIKE ?
+                    
+                
+            """
+
+        cursor.execute(query, (f"%{search_text}%", f"%{search_text}%", f"%{search_text}%",f"%{search_text}%", f"%{search_text}%", f"%{search_text}%"))
+        rows = cursor.fetchall()
+        conn.close()
+
+        self.table.setRowCount(len(rows))
+
+        for row in range(len(rows)):
+            for column, value in enumerate(rows[row]):
+                self.table.setItem(row, column, QTableWidgetItem(str(value)))
+
+            delete_button = QPushButton("Διαγραφή")
+            update_button = QPushButton("Ενημέρωση")
+            delete_button.setStyleSheet(self.Buttonstylesheet)
+            update_button.setStyleSheet(self.Buttonstylesheet)
+
+            delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
+            update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
+
+            self.table.setCellWidget(row, 8, delete_button)
+            self.table.setCellWidget(row, 9, update_button)
     def add_member(self):
         # Ζήτα από τον χρήστη το μητρώο μέλους
         μητρώο_μέλους, ok1 = QInputDialog.getText(self.parent, "Εισαγωγή Μητρώου Μέλους", "Μητρώο Μέλους:")
