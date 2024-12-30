@@ -1,7 +1,7 @@
 import sys
-from PyQt6.QtWidgets import QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout, QPushButton, QMessageBox, QInputDialog
-from PyQt6.uic import loadUi
+from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QPushButton, QMessageBox, QInputDialog
 import sqlite3
+from PyQt6.QtCore import Qt
 from PyQt6.QtCore import QDate
 from Melos import Melos
 class TeamPaiktis(Melos):
@@ -45,7 +45,7 @@ class TeamPaiktis(Melos):
             cursor.execute(query)
             rows = cursor.fetchall()
 
-            column_names = [description[0] for description in cursor.description]
+            column_names = ["Μητρώο Μέλους","Όνομα","Επώνυμο","Ημερομηνία Γέννησης","Επίπεδο","Τηλέφωνο","Φύλο","Πλήθος Αδερφών","RN","Δελτίο Αθλητή","Ήττες","Νίκες","Πόντοι","Κατηγορία"]
             conn.close()
 
             self.table.setRowCount(len(rows))
@@ -54,11 +54,15 @@ class TeamPaiktis(Melos):
 
             for row in range(len(rows)):
                 for column, value in enumerate(rows[row]):
-                    self.table.setItem(row, column, QTableWidgetItem(str(value)))
+                    item = QTableWidgetItem(str(value))
+                    item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)  # Μη επεξεργάσιμο στοιχείο
+                    self.table.setItem(row, column, item)
 
                 # Προσθήκη κουμπιών "Διαγραφή" και "Ενημέρωση"
                 delete_button = QPushButton("Διαγραφή")
                 update_button = QPushButton("Ενημέρωση")
+                delete_button.setStyleSheet(self.Buttonstylesheet)
+                update_button.setStyleSheet(self.Buttonstylesheet)                
                 self.table.setCellWidget(row, len(column_names), delete_button)
                 self.table.setCellWidget(row, len(column_names) + 1, update_button)
 
@@ -67,7 +71,9 @@ class TeamPaiktis(Melos):
                 layout = QVBoxLayout()
                 self.parent.tabMeli.setLayout(layout)
 
-            layout.addWidget(self.searchBar)
+            if not hasattr(self, "searchBar_added") or not self.searchBar_added:
+                layout.addWidget(self.searchBar)
+                self.searchBar_added = True
             layout.addWidget(self.table)
             layout.addWidget(self.backButton)
             self.table_shown = True
@@ -123,7 +129,9 @@ class TeamPaiktis(Melos):
 
         for row in range(len(rows)):
             for column, value in enumerate(rows[row]):
-                self.table.setItem(row, column, QTableWidgetItem(str(value)))
+                item = QTableWidgetItem(str(value))
+                item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)  # Μη επεξεργάσιμο στοιχείο
+                self.table.setItem(row, column, item)
 
             delete_button = QPushButton("Διαγραφή")
             update_button = QPushButton("Ενημέρωση")
@@ -132,7 +140,10 @@ class TeamPaiktis(Melos):
 
             delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
             update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
-
+            if self.table.cellWidget(row, 8):
+                self.table.cellWidget(row, 8).deleteLater()
+            if self.table.cellWidget(row, 9):
+                self.table.cellWidget(row, 9).deleteLater()
             self.table.setCellWidget(row, 8, delete_button)
             self.table.setCellWidget(row, 9, update_button)
     def add_member(self):
@@ -237,11 +248,17 @@ class TeamPaiktis(Melos):
             self.table.insertRow(row_position)  # Προσθήκη νέας γραμμής
             for item in range(len(row)):
                 if isinstance(row[item],str):
-                    self.table.setItem(row_position, item, QTableWidgetItem(row[item]))  # Μητρώο Μέλους
+                    Item=QTableWidgetItem(row[item])
+                    Item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                    self.table.setItem(row_position, item, Item)  
                 elif isinstance(row[item],int) or isinstance(row[item],float) :
-                    self.table.setItem(row_position, item, QTableWidgetItem(str(row[item])))  # Μητρώο Μέλους
+                    Item=QTableWidgetItem(str(row[item]))
+                    Item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                    self.table.setItem(row_position, item, Item) 
                 else:
-                    self.table.setItem(row_position, item, QTableWidgetItem(str("None")))  # Μητρώο Μέλους
+                    Item=QTableWidgetItem(str("None"))
+                    Item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)                    
+                    self.table.setItem(row_position, item, Item)  # Μητρώο Μέλους
             # Ρύθμιση των κελιών με τα νέα δεδομένα
 
             # Δημιουργία κουμπιών "Διαγραφή" και "Ενημέρωση" για τη νέα γραμμή
