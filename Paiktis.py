@@ -62,9 +62,11 @@ class TeamPaiktis(Melos):
                 delete_button = QPushButton("Διαγραφή")
                 update_button = QPushButton("Ενημέρωση")
                 delete_button.setStyleSheet(self.Buttonstylesheet)
-                update_button.setStyleSheet(self.Buttonstylesheet)                
+                update_button.setStyleSheet(self.Buttonstylesheet)        
+                delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
+                update_button.clicked.connect(lambda checked, row=row: self.update_member(row))        
                 self.table.setCellWidget(row, len(column_names), delete_button)
-                self.table.setCellWidget(row, len(column_names) + 1, update_button)
+                self.table.setCellWidget(row, len(column_names)+1, update_button)
 
             layout = self.parent.tabMeli.layout()
             if layout is None:
@@ -121,7 +123,7 @@ class TeamPaiktis(Melos):
                 
             """
 
-        cursor.execute(query, (f"%{search_text}%", f"%{search_text}%", f"%{search_text}%",f"%{search_text}%", f"%{search_text}%", f"%{search_text}%"))
+        cursor.execute(query, (f"%{search_text}%", f"%{search_text}%", f"%{search_text}%",f"%{search_text}%", f"%{search_text}%", f"%{search_text}%",f"%{search_text}%", f"%{search_text}%", f"%{search_text}%"))
         rows = cursor.fetchall()
         conn.close()
 
@@ -140,12 +142,12 @@ class TeamPaiktis(Melos):
 
             delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
             update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
-            if self.table.cellWidget(row, 8):
-                self.table.cellWidget(row, 8).deleteLater()
-            if self.table.cellWidget(row, 9):
-                self.table.cellWidget(row, 9).deleteLater()
-            self.table.setCellWidget(row, 8, delete_button)
-            self.table.setCellWidget(row, 9, update_button)
+            if self.table.cellWidget(row, 14):
+                self.table.cellWidget(row, 14).deleteLater()
+            if self.table.cellWidget(row, 15):
+                self.table.cellWidget(row, 15).deleteLater()
+            self.table.setCellWidget(row, 14, delete_button)
+            self.table.setCellWidget(row, 15, update_button)
     def add_member(self):
         # Ζήτα από τον χρήστη το μητρώο μέλους
         μητρώο_μέλους, ok1 = QInputDialog.getText(self.parent, "Εισαγωγή Μητρώου Μέλους", "Μητρώο Μέλους:")
@@ -265,11 +267,15 @@ class TeamPaiktis(Melos):
             delete_button = QPushButton("Διαγραφή")
             update_button = QPushButton("Ενημέρωση")
 
-            delete_button.clicked.connect(lambda checked, row=row_position: self.delete_member(row_position))
-            update_button.clicked.connect(lambda checked, row=row_position: self.update_member(row_position))
+            # Χρησιμοποιούμε default arguments για να δεσμεύσουμε την τρέχουσα τιμή της row_position
+            delete_button.clicked.connect(lambda checked, row=row_position: self.delete_member(row))
+            update_button.clicked.connect(lambda checked, row=row_position: self.update_member(row))
 
             self.table.setCellWidget(row_position, len(row), delete_button)  # Διαγραφή στην στήλη 12
-            self.table.setCellWidget(row_position, len(row)+1, update_button)  # Ενημέρωση στην στήλη 13
+            self.table.setCellWidget(row_position, len(row) + 1, update_button)  # Ενημέρωση στην στήλη 13
+            delete_button.setStyleSheet(self.Buttonstylesheet)
+            update_button.setStyleSheet(self.Buttonstylesheet)
+
 
             QMessageBox.information(self.parent, "Επιτυχία", f"Ο παίκτης με μητρώο {μητρώο_μέλους} προστέθηκε στην ομάδα.")
 
