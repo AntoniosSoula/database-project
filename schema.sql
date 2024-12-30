@@ -241,4 +241,10 @@ CREATE INDEX idx_proponisi_date ON ΠΡΟΠΟΝΗΤΗΣ_ΠΡΟΠΟΝΕΙ_ΜΕΛ�
 CREATE INDEX idx_member_id ON ΠΡΟΠΟΝΗΤΗΣ_ΠΡΟΠΟΝΕΙ_ΜΕΛΟΣ("μητρώο_μέλους");
 CREATE INDEX idx_email ON ΠΡΟΠΟΝΗΤΗΣ_ΠΡΟΠΟΝΕΙ_ΜΕΛΟΣ(email);
 CREATE INDEX idx_situation ON ΠΡΟΠΟΝΗΤΗΣ_ΠΡΟΠΟΝΕΙ_ΜΕΛΟΣ("κατάσταση");
+CREATE INDEX idx_mitrwo_melous ON ΜΕΛΟΣ("μητρώο_μέλους");
+CREATE INDEX idx_onoma ON ΜΕΛΟΣ("όνομα");
+CREATE INDEX idx_eponimo ON ΜΕΛΟΣ("επώνυμο");
+CREATE INDEX idx_hmerominia_genisis ON ΜΕΛΟΣ("ημερομηνία γέννησης");
+CREATE INDEX idx_thlefono ON ΜΕΛΟΣ("τηλέφωνο");
+CREATE INDEX idx_filo ON ΜΕΛΟΣ("φύλο");
 COMMIT;

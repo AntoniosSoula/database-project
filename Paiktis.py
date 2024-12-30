@@ -67,6 +67,7 @@ class TeamPaiktis(Melos):
                 layout = QVBoxLayout()
                 self.parent.tabMeli.setLayout(layout)
 
+            layout.addWidget(self.searchBar)
             layout.addWidget(self.table)
             layout.addWidget(self.backButton)
             self.table_shown = True

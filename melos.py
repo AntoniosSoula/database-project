@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout, QPushButton, QMessageBox,QInputDialog
+from PyQt6.QtWidgets import QApplication, QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout, QPushButton, QMessageBox,QInputDialog,QLineEdit
 from PyQt6.uic import loadUi
 import sqlite3
 from PyQt6.QtCore import QDate
@@ -17,6 +17,9 @@ class Melos:
         self.backButton.setStyleSheet(self.Buttonstylesheet)
         self.backButton.clicked.connect(self.go_back)
 
+        self.searchBar = QLineEdit()
+        self.searchBar.setPlaceholderText("Αναζήτηση...")
+        self.searchBar.textChanged.connect(self.search_member)
     def load_stylesheet(self, style):
         try:
             with open(style, "r") as f:
@@ -70,6 +73,7 @@ class Melos:
             layout = QVBoxLayout()
             self.parent.tabMeli.setLayout(layout)
 
+        layout.addWidget(self.searchBar)
         layout.addWidget(self.table)
         layout.addWidget(self.backButton)
         self.table_shown = True
@@ -79,7 +83,7 @@ class Melos:
         self.addButton.setStyleSheet(self.Buttonstylesheet)
         self.addButton.clicked.connect(self.add_member)
         layout.addWidget(self.addButton)
-
+    
     def add_member(self):
         # Λήψη του επόμενου μητρώου
         new_member_id = self.get_next_member_id()
@@ -309,3 +313,39 @@ class Melos:
 
             # Ενεργοποίηση του κουμπιού "Πίνακας Μελών"
             self.parent.buttonTableMeli.setEnabled(True)
+    def search_member(self):
+        
+        search_text = self.searchBar.text()
+
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        query = f"""
+            SELECT * FROM {self.table_name}
+            WHERE μητρώο_μέλους LIKE ? OR
+                  επώνυμο LIKE ? OR
+                  όνομα LIKE ? OR
+                  "ημρομηνία γέννησης" LIKE ?  OR
+                  "τηλέφωνο" LIKE ? OR
+                  "φύλο" LIKE ?
+        """
+
+        cursor.execute(query, (f"%{search_text}%", f"%{search_text}%", f"%{search_text}%",f"%{search_text}%", f"%{search_text}%", f"%{search_text}%"))
+        rows = cursor.fetchall()
+        conn.close()
+
+        self.table.setRowCount(len(rows))
+
+        for row in range(len(rows)):
+            for column, value in enumerate(rows[row]):
+                self.table.setItem(row, column, QTableWidgetItem(str(value)))
+
+            delete_button = QPushButton("Διαγραφή")
+            update_button = QPushButton("Ενημέρωση")
+            delete_button.setStyleSheet(self.Buttonstylesheet)
+            update_button.setStyleSheet(self.Buttonstylesheet)
+
+            delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
+            update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
+
+            self.table.setCellWidget(row, 8, delete_button)
+            self.table.setCellWidget(row, 9, update_button)
