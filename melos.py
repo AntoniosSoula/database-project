@@ -17,9 +17,10 @@ class Melos:
         self.backButton.setStyleSheet(self.Buttonstylesheet)
         self.backButton.clicked.connect(self.go_back)
 
-        self.searchBar = QLineEdit()
-        self.searchBar.setPlaceholderText("Αναζήτηση...")
-        self.searchBar.textChanged.connect(self.search_member)
+        if not hasattr(self, 'searchBar') or self.searchBar is None:
+            self.searchBar = QLineEdit()
+            self.searchBar.setPlaceholderText("Αναζήτηση...")
+            self.searchBar.textChanged.connect(self.search_member)
     def load_stylesheet(self, style):
         try:
             with open(style, "r") as f:
@@ -32,10 +33,7 @@ class Melos:
             self.table.setParent(None)  # Αφαιρούμε τον πίνακα αν έχει εμφανιστεί ήδη
             self.table_shown = False
 
-        if not hasattr(self, 'searchBar') or self.searchBar is None:
-            self.searchBar = QLineEdit()
-            self.searchBar.setPlaceholderText("Αναζήτηση...")
-            self.searchBar.textChanged.connect(self.search_member)
+
         # Δημιουργούμε έναν νέο πίνακα
         self.table = QTableWidget()
         conn = sqlite3.connect('database.db')
@@ -77,8 +75,10 @@ class Melos:
         if layout is None:
             layout = QVBoxLayout()
             self.parent.tabMeli.setLayout(layout)
-
-        layout.addWidget(self.searchBar)
+        if not hasattr(self, "searchBar_added") or not self.searchBar_added:
+            layout.addWidget(self.searchBar)
+            self.searchBar_added = True
+ 
         layout.addWidget(self.table)
         layout.addWidget(self.backButton)
         self.table_shown = True
