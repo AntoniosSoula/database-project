@@ -32,6 +32,10 @@ class Melos:
             self.table.setParent(None)  # Αφαιρούμε τον πίνακα αν έχει εμφανιστεί ήδη
             self.table_shown = False
 
+        if not hasattr(self, 'searchBar') or self.searchBar is None:
+            self.searchBar = QLineEdit()
+            self.searchBar.setPlaceholderText("Αναζήτηση...")
+            self.searchBar.textChanged.connect(self.search_member)
         # Δημιουργούμε έναν νέο πίνακα
         self.table = QTableWidget()
         conn = sqlite3.connect('database.db')
@@ -342,7 +346,10 @@ class Melos:
                 item = QTableWidgetItem(str(value))
                 item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)  # Μη επεξεργάσιμο στοιχείο
                 self.table.setItem(row, column, item)
-
+        if self.table.cellWidget(row, 8):
+            self.table.cellWidget(row, 8).deleteLater()
+        if self.table.cellWidget(row, 9):
+            self.table.cellWidget(row, 9).deleteLater()
             delete_button = QPushButton("Διαγραφή")
             update_button = QPushButton("Ενημέρωση")
             delete_button.setStyleSheet(self.Buttonstylesheet)
