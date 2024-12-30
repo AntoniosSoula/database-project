@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QPushButton, QMessageBox, QInputDialog
+from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QPushButton, QMessageBox, QInputDialog,QLineEdit
 import sqlite3
 from PyQt6.QtCore import Qt
 from PyQt6.QtCore import QDate
@@ -73,9 +73,15 @@ class TeamPaiktis(Melos):
                 layout = QVBoxLayout()
                 self.parent.tabMeli.setLayout(layout)
 
-            if not hasattr(self, "searchBar_added") or not self.searchBar_added:
-                layout.addWidget(self.searchBar)
-                self.searchBar_added = True
+            self.search_bar = QLineEdit()  # Νέο αντικείμενο QLineEdit κάθε φορά
+            self.search_bar.setPlaceholderText("Αναζήτηση...")
+            self.search_bar.textChanged.connect(self.search_member)  # Συνδέουμε το νέο αντικείμενο
+
+                # Προσθήκη widgets στο layout
+            layout.addWidget(self.search_bar)
+ 
+     
+
             layout.addWidget(self.table)
             layout.addWidget(self.backButton)
             self.table_shown = True
@@ -86,7 +92,7 @@ class TeamPaiktis(Melos):
             layout.addWidget(self.addButton)
     def search_member(self):
         
-        search_text = self.searchBar.text()
+        search_text = self.search_bar.text()
 
         conn = sqlite3.connect('database.db')
         cursor = conn.cursor()
@@ -480,7 +486,7 @@ class ΝοTeamPaiktis(Melos):
             rows = cursor.fetchall()
 
         # Λήψη δυναμικών στηλών
-            column_names = [description[0] for description in cursor.description]
+            column_names = ["Μητρώο Μέλους","Όνομα","Επώνυμο","Ημερομηνία Γέννησης","Επίπεδο","Τηλέφωνο","Φύλο","Πλήθος Αδερφών","RN","Δελτίο Αθλητή","Ομάδα"]
 
             conn.close()
 
@@ -492,30 +498,100 @@ class ΝοTeamPaiktis(Melos):
 # Ρύθμιση των κελιών με τα νέα δεδομένα
             for row in range(len(rows)):
                 for column, value in enumerate(rows[row]):
-                    self.table.setItem(row, column, QTableWidgetItem(str(value)))
+                    item = QTableWidgetItem(str(value))
+                    item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)  # Μη επεξεργάσιμο στοιχείο
+                    self.table.setItem(row, column, item)
 
             # Δημιουργία κουμπιών "Διαγραφή" και "Ενημέρωση" για τη νέα γραμμή
                 delete_button = QPushButton("Διαγραφή")
                 update_button = QPushButton("Ενημέρωση")
-
+                delete_button.setStyleSheet(self.Buttonstylesheet)
+                update_button.setStyleSheet(self.Buttonstylesheet)        
                 delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
-                update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
-
-                self.table.setCellWidget(row, len(column_names), delete_button)  # Διαγραφή στην στήλη 12
-                self.table.setCellWidget(row, len(column_names) + 1, update_button)  # Ενημέρωση στην στήλη 13
+                update_button.clicked.connect(lambda checked, row=row: self.update_member(row))        
+                self.table.setCellWidget(row, len(column_names), delete_button)
+                self.table.setCellWidget(row, len(column_names)+1, update_button)
 
             layout = self.parent.tabMeli.layout()
             if layout is None:
                 layout = QVBoxLayout()
                 self.parent.tabMeli.setLayout(layout)
+                
+            self.search_bar = QLineEdit()  # Νέο αντικείμενο QLineEdit κάθε φορά
+            self.search_bar.setPlaceholderText("Αναζήτηση...")
+            self.search_bar.textChanged.connect(self.search_member)  # Συνδέουμε το νέο αντικείμενο
 
+                # Προσθήκη widgets στο layout
+            layout.addWidget(self.search_bar)
+                
             layout.addWidget(self.table)
             layout.addWidget(self.backButton)
             self.table_shown = True
+
             self.addButton = QPushButton("Προσθήκη Ξένου Παίκτη")
             self.addButton.setStyleSheet(self.Buttonstylesheet)
             self.addButton.clicked.connect(self.add_member)
             layout.addWidget(self.addButton)
+    def search_member(self):
+        
+        search_text = self.search_bar.text()
+
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        query = f"""SELECT  "{super().table_name}"."μητρώο_μέλους",
+                            "{super().table_name}"."όνομα", 
+                            "{super().table_name}"."επώνυμο", 
+                            "{super().table_name}"."ημερομηνία_γέννησης", 
+                            "{super().table_name}"."επίπεδο", 
+                            "{super().table_name}"."τηλέφωνο", 
+                            "{super().table_name}"."φύλο", 
+                            "{super().table_name}"."πλήθος_αδελφών",
+                            "{self.table_name}"."RN", 
+                            "{self.table_name}"."Δελτίο_ΑΘλητή", 
+                            "{self.table2_name}"."ομάδα"
+                        FROM "{self.table_name}"
+                        JOIN "{super().table_name}" 
+                            ON "{self.table_name}"."μητρώο_μέλους" = "{super().table_name}"."μητρώο_μέλους"
+                        JOIN "{self.table2_name}"
+                            ON "{self.table_name}"."μητρώο_μέλους" = "{self.table2_name}"."μητρώο_μέλους"
+
+                WHERE "{super().table_name}"."μητρώο_μέλους" LIKE ? OR
+                    "{super().table_name}"."όνομα" LIKE ? OR "{super().table_name}"."επώνυμο" LIKE ? OR
+                    "{super().table_name}"."ημερομηνία_γέννησης" LIKE ? OR
+                    "{super().table_name}"."επίπεδο" LIKE ? OR
+                    "{super().table_name}"."τηλέφωνο" LIKE ? OR
+                    "{super().table_name}"."φύλο" LIKE ? OR
+                    "{self.table_name}"."RN" LIKE ? OR
+                     "{self.table2_name}"."ομάδα" LIKE ?
+                    
+                
+            """
+
+        cursor.execute(query, (f"%{search_text}%", f"%{search_text}%", f"%{search_text}%",f"%{search_text}%", f"%{search_text}%", f"%{search_text}%",f"%{search_text}%", f"%{search_text}%", f"%{search_text}%"))
+        rows = cursor.fetchall()
+        conn.close()
+
+        self.table.setRowCount(len(rows))
+
+        for row in range(len(rows)):
+            for column, value in enumerate(rows[row]):
+                item = QTableWidgetItem(str(value))
+                item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)  # Μη επεξεργάσιμο στοιχείο
+                self.table.setItem(row, column, item)
+
+            delete_button = QPushButton("Διαγραφή")
+            update_button = QPushButton("Ενημέρωση")
+            delete_button.setStyleSheet(self.Buttonstylesheet)
+            update_button.setStyleSheet(self.Buttonstylesheet)
+
+            delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
+            update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
+            if self.table.cellWidget(row, 11):
+                self.table.cellWidget(row, 11).deleteLater()
+            if self.table.cellWidget(row, 12):
+                self.table.cellWidget(row, 12).deleteLater()
+            self.table.setCellWidget(row, 11, delete_button)
+            self.table.setCellWidget(row, 12, update_button)    
     def add_member(self):
         # Ζήτα από τον χρήστη το μητρώο μέλους
         μητρώο_μέλους, ok1 = QInputDialog.getText(self.parent, "Εισαγωγή Μητρώου Μέλους", "Μητρώο Μέλους:")
@@ -620,17 +696,24 @@ class ΝοTeamPaiktis(Melos):
             self.table.insertRow(row_position)  # Προσθήκη νέας γραμμής
             for item in range(len(row)):
                 if isinstance(row[item],str):
-                    self.table.setItem(row_position, item, QTableWidgetItem(row[item]))  # Μητρώο Μέλους
+                    Item=QTableWidgetItem(row[item])
+                    Item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                    self.table.setItem(row_position, item, Item)  
                 elif isinstance(row[item],int) or isinstance(row[item],float) :
-                    self.table.setItem(row_position, item, QTableWidgetItem(str(row[item])))  # Μητρώο Μέλους
+                    Item=QTableWidgetItem(str(row[item]))
+                    Item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                    self.table.setItem(row_position, item, Item) 
                 else:
-                    self.table.setItem(row_position, item, QTableWidgetItem(str("None")))  # Μητρώο Μέλους
+                    Item=QTableWidgetItem(str("None"))
+                    Item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)                    
+                    self.table.setItem(row_position, item, Item)
             # Ρύθμιση των κελιών με τα νέα δεδομένα
 
             # Δημιουργία κουμπιών "Διαγραφή" και "Ενημέρωση" για τη νέα γραμμή
             delete_button = QPushButton("Διαγραφή")
             update_button = QPushButton("Ενημέρωση")
-
+            delete_button.setStyleSheet(self.Buttonstylesheet)
+            update_button.setStyleSheet(self.Buttonstylesheet)
             delete_button.clicked.connect(lambda checked, row=row_position: self.delete_member(row_position))
             update_button.clicked.connect(lambda checked, row=row_position: self.update_member(row_position))
 
@@ -809,70 +892,146 @@ class PaiktisAmeivomenos(TeamPaiktis):
         if self.table_shown:
             self.table.setParent(None)
             self.table_shown = False
-        else:
-            self.table = QTableWidget()
-            conn = sqlite3.connect('database.db')
-            cursor = conn.cursor()
-            cursor.execute("PRAGMA foreign_keys = ON;")
-            query = f"""
-    SELECT
-        "{Melos.table_name}"."μητρώο_μέλους",  -- Πίνακας ΜΕΛΟΣ
-        "{Melos.table_name}"."όνομα", 
-        "{Melos.table_name}"."επώνυμο", 
-        "{Melos.table_name}"."τηλέφωνο", 
-        "{super().table_name}"."RN",  -- Πίνακας ΠΑΙΚΤΗΣ
-        "{self.table_name}"."ΑΦΜ",  -- Πίνακας ΑΜΕΙΒΟΜΕΝΟΣ ΠΑΙΚΤΗΣ
-        "{self.table_name}"."αμοιβή", 
-        "{self.table_name}"."ημερομηνία έναρξης συμβολαίου", 
-        "{self.table_name}"."ημερομηνία λήξης συμβολαίου",
-        "{self.table_name}"."IBAN"
-    FROM "{self.table_name}"  -- ΑΜΕΙΒΟΜΕΝΟΣ ΠΑΙΚΤΗΣ
-    JOIN "{Melos.table_name}" 
-        ON "{self.table_name}"."μητρώο_μέλους" = "{Melos.table_name}"."μητρώο_μέλους"  -- JOIN με ΜΕΛΟΣ
-    JOIN "{super().table_name}"  -- JOIN με ΠΑΙΚΤΗΣ
-        ON "{self.table_name}"."μητρώο_μέλους" = "{super().table_name}"."μητρώο_μέλους"
-"""
- 
-            cursor.execute(query)
-            rows = cursor.fetchall()
 
-        # Λήψη δυναμικών στηλών
-            column_names = [description[0] for description in cursor.description]
+        # Δημιουργία πίνακα και σύνδεση με το σωστό parent
+        self.table = QTableWidget()  # Μην ορίζεις το parent εδώ, το χειρίζεται το layout
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA foreign_keys = ON;")
+        query = f"""
+        SELECT
+            "{Melos.table_name}"."μητρώο_μέλους",  -- Πίνακας ΜΕΛΟΣ
+            "{Melos.table_name}"."όνομα", 
+            "{Melos.table_name}"."επώνυμο", 
+            "{Melos.table_name}"."τηλέφωνο", 
+            "{super().table_name}"."RN",  -- Πίνακας ΠΑΙΚΤΗΣ
+            "{self.table_name}"."ΑΦΜ",  -- Πίνακας ΑΜΕΙΒΟΜΕΝΟΣ ΠΑΙΚΤΗΣ
+            "{self.table_name}"."αμοιβή", 
+            "{self.table_name}"."ημερομηνία έναρξης συμβολαίου", 
+            "{self.table_name}"."ημερομηνία λήξης συμβολαίου",
+            "{self.table_name}"."IBAN"
+        FROM "{self.table_name}"  -- ΑΜΕΙΒΟΜΕΝΟΣ ΠΑΙΚΤΗΣ
+        JOIN "{Melos.table_name}" 
+            ON "{self.table_name}"."μητρώο_μέλους" = "{Melos.table_name}"."μητρώο_μέλους"  -- JOIN με ΜΕΛΟΣ
+        JOIN "{super().table_name}"  -- JOIN με ΠΑΙΚΤΗΣ
+            ON "{self.table_name}"."μητρώο_μέλους" = "{super().table_name}"."μητρώο_μέλους"
+        """
+        cursor.execute(query)
+        rows = cursor.fetchall()
 
-            conn.close()
+        column_names = ["Μητρώο Μέλους", "Όνομα", "Επώνυμο", "Τηλέφωνο", "RN", "ΑΦΜ",
+                        "Αμοιβή", "Ημ Έναρξης Συμβολαίου", "Ημ Λήξης Συμβολαίου", "IBAN"]
 
-        # Ρυθμίσεις για το QTableWidget
-            self.table.setRowCount(len(rows))
-            self.table.setColumnCount(len(column_names) + 2)  # +2 για τις στήλες Διαγραφή και Ενημέρωση
-            self.table.setHorizontalHeaderLabels(column_names + ["Διαγραφή", "Ενημέρωση"])
+        conn.close()
 
-    # Ρύθμιση των κελιών με τα νέα δεδομένα
-            for row in range(len(rows)):
-                for column, value in enumerate(rows[row]):
-                    self.table.setItem(row, column, QTableWidgetItem(str(value)))
+        self.table.setRowCount(len(rows))
+        self.table.setColumnCount(len(column_names) + 2)  # +2 για Διαγραφή και Ενημέρωση
+        self.table.setHorizontalHeaderLabels(column_names + ["Διαγραφή", "Ενημέρωση"])
 
-            # Δημιουργία κουμπιών "Διαγραφή" και "Ενημέρωση" για τη νέα γραμμή
-                delete_button = QPushButton("Διαγραφή")
-                update_button = QPushButton("Ενημέρωση")
+        # Συμπλήρωση δεδομένων στον πίνακα
+        for row, row_data in enumerate(rows):
+            for column, value in enumerate(row_data):
+                item = QTableWidgetItem(str(value))
+                item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                self.table.setItem(row, column, item)
 
-                delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
-                update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
+            # Δημιουργία κουμπιών
+            delete_button = QPushButton("Διαγραφή")
+            update_button = QPushButton("Ενημέρωση")
+            delete_button.setStyleSheet(self.Buttonstylesheet)
+            update_button.setStyleSheet(self.Buttonstylesheet)
+            delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
+            update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
+            self.table.setCellWidget(row, len(column_names), delete_button)
+            self.table.setCellWidget(row, len(column_names) + 1, update_button)
 
-                self.table.setCellWidget(row, len(column_names), delete_button)  # Διαγραφή στην στήλη 12
-                self.table.setCellWidget(row, len(column_names) + 1, update_button)  # Ενημέρωση στην στήλη 13
+        # Ενσωμάτωση του πίνακα στο layout
+        layout = self.parent.tabMeli.layout()
+        if layout is None:
+            layout = QVBoxLayout()
+            self.parent.tabMeli.setLayout(layout)
 
-            layout = self.parent.tabMeli.layout()
-            if layout is None:
-                layout = QVBoxLayout()
-                self.parent.tabMeli.setLayout(layout)
+        # Καθαρισμός υπάρχοντος περιεχομένου
+        while layout.count():
+            child = layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
 
-            layout.addWidget(self.table)
-            layout.addWidget(self.backButton)
-            self.table_shown = True
-            self.addButton = QPushButton("Προσθήκη Αμειβόμενου Παίκτη")
-            self.addButton.setStyleSheet(self.Buttonstylesheet)
-            self.addButton.clicked.connect(self.add_member)
-            layout.addWidget(self.addButton)
+        self.search_bar = QLineEdit()  # Νέο αντικείμενο QLineEdit κάθε φορά
+        self.search_bar.setPlaceholderText("Αναζήτηση...")
+        self.search_bar.textChanged.connect(self.search_member)  # Συνδέουμε το νέο αντικείμενο
+
+            # Προσθήκη widgets στο layout
+        layout.addWidget(self.search_bar)
+        layout.addWidget(self.table)
+        layout.addWidget(self.backButton)
+
+        # Κουμπί προσθήκης
+        self.addButton = QPushButton("Προσθήκη Αμειβόμενου Παίκτη")
+        self.addButton.setStyleSheet(self.Buttonstylesheet)
+        self.addButton.clicked.connect(self.add_member)
+        layout.addWidget(self.addButton)
+
+        self.table_shown = True
+        self.backButton = QPushButton("Επιστροφή")
+        self.backButton.setStyleSheet(self.Buttonstylesheet)
+        self.backButton.clicked.connect(self.go_back)
+    def search_member(self):
+        
+        search_text = self.search_bar.text()
+
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        query = f"""
+                SELECT
+                "{Melos.table_name}"."μητρώο_μέλους",  -- Πίνακας ΜΕΛΟΣ
+                "{Melos.table_name}"."όνομα", 
+                "{Melos.table_name}"."επώνυμο", 
+                "{Melos.table_name}"."τηλέφωνο", 
+                "{super().table_name}"."RN",  -- Πίνακας ΠΑΙΚΤΗΣ
+                "{self.table_name}"."ΑΦΜ",  -- Πίνακας ΑΜΕΙΒΟΜΕΝΟΣ ΠΑΙΚΤΗΣ
+                "{self.table_name}"."αμοιβή", 
+                "{self.table_name}"."ημερομηνία έναρξης συμβολαίου", 
+                "{self.table_name}"."ημερομηνία λήξης συμβολαίου",
+                "{self.table_name}"."IBAN"
+            FROM "{self.table_name}"  -- ΑΜΕΙΒΟΜΕΝΟΣ ΠΑΙΚΤΗΣ
+            JOIN "{Melos.table_name}" 
+                ON "{self.table_name}"."μητρώο_μέλους" = "{Melos.table_name}"."μητρώο_μέλους"  -- JOIN με ΜΕΛΟΣ
+            JOIN "{super().table_name}"  -- JOIN με ΠΑΙΚΤΗΣ
+                ON "{self.table_name}"."μητρώο_μέλους" = "{super().table_name}"."μητρώο_μέλους"
+                WHERE "{super().table_name}"."μητρώο_μέλους" LIKE ? OR
+                    "{Melos.table_name}"."όνομα" LIKE ? OR "{Melos.table_name}"."επώνυμο" LIKE ? OR
+                    "{self.table_name}"."ΑΦΜ" LIKE ? OR
+                    "{self.table_name}"."αμοιβή" LIKE ? OR
+                    "{Melos.table_name}"."τηλέφωνο" LIKE ? OR
+                    "{super().table_name}"."RN" LIKE ?          
+            """
+
+        cursor.execute(query, (f"%{search_text}%", f"%{search_text}%", f"%{search_text}%",f"%{search_text}%", f"%{search_text}%", f"%{search_text}%",f"%{search_text}%"))
+        rows = cursor.fetchall()
+        conn.close()
+
+        self.table.setRowCount(len(rows))
+
+        for row in range(len(rows)):
+            for column, value in enumerate(rows[row]):
+                item = QTableWidgetItem(str(value))
+                item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)  # Μη επεξεργάσιμο στοιχείο
+                self.table.setItem(row, column, item)
+
+            delete_button = QPushButton("Διαγραφή")
+            update_button = QPushButton("Ενημέρωση")
+            delete_button.setStyleSheet(self.Buttonstylesheet)
+            update_button.setStyleSheet(self.Buttonstylesheet)
+
+            delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
+            update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
+            if self.table.cellWidget(row, 10):
+                self.table.cellWidget(row, 10).deleteLater()
+            if self.table.cellWidget(row, 11):
+                self.table.cellWidget(row, 11).deleteLater()
+            self.table.setCellWidget(row, 10, delete_button)
+            self.table.setCellWidget(row, 11, update_button)    
     def delete_member(self, row):
         item = self.table.item(row, 0)
         if item is None:  # Έλεγχος αν το κελί είναι κενό

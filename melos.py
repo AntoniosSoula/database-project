@@ -17,10 +17,6 @@ class Melos:
         self.backButton.setStyleSheet(self.Buttonstylesheet)
         self.backButton.clicked.connect(self.go_back)
 
-        if not hasattr(self, 'searchBar') or self.searchBar is None:
-            self.searchBar = QLineEdit()
-            self.searchBar.setPlaceholderText("Αναζήτηση...")
-            self.searchBar.textChanged.connect(self.search_member)
     def load_stylesheet(self, style):
         try:
             with open(style, "r") as f:
@@ -75,9 +71,12 @@ class Melos:
         if layout is None:
             layout = QVBoxLayout()
             self.parent.tabMeli.setLayout(layout)
-        if not hasattr(self, "searchBar_added") or not self.searchBar_added:
-            layout.addWidget(self.searchBar)
-            self.searchBar_added = True
+        self.search_bar = QLineEdit()  # Νέο αντικείμενο QLineEdit κάθε φορά
+        self.search_bar.setPlaceholderText("Αναζήτηση...")
+        self.search_bar.textChanged.connect(self.search_member)  # Συνδέουμε το νέο αντικείμενο
+
+            # Προσθήκη widgets στο layout
+        layout.addWidget(self.search_bar)
  
         layout.addWidget(self.table)
         layout.addWidget(self.backButton)
@@ -190,7 +189,7 @@ class Melos:
 
             # Διαγραφή από τον πίνακα "ΞΕΝΟΣ ΠΑΙΚΤΗΣ"
             cursor.execute(f"DELETE FROM 'ΞΕΝΟΣ ΠΑΙΚΤΗΣ' WHERE μητρώο_μέλους = ?", (member_id,))
-
+            cursor.execute(f"DELETE FROM 'ΑΜΕΙΒΟΜΕΝΟΣ ΠΑΙΚΤΗΣ' WHERE μητρώο_μέλους = ?", (member_id,))
             # Επιβεβαίωση και αποθήκευση των αλλαγών στη βάση δεδομένων
             conn.commit()
             QMessageBox.information(self.parent, "Επιτυχία", f"Το μέλος με μητρώο {member_id} διαγράφηκε επιτυχώς.")
@@ -321,7 +320,7 @@ class Melos:
             self.parent.buttonTableMeli.setEnabled(True)
     def search_member(self):
         
-        search_text = self.searchBar.text()
+        search_text = self.search_bar.text()
 
         conn = sqlite3.connect('database.db')
         cursor = conn.cursor()
@@ -346,10 +345,10 @@ class Melos:
                 item = QTableWidgetItem(str(value))
                 item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)  # Μη επεξεργάσιμο στοιχείο
                 self.table.setItem(row, column, item)
-        if self.table.cellWidget(row, 8):
-            self.table.cellWidget(row, 8).deleteLater()
-        if self.table.cellWidget(row, 9):
-            self.table.cellWidget(row, 9).deleteLater()
+            if self.table.cellWidget(row, 8):
+                self.table.cellWidget(row, 8).deleteLater()
+            if self.table.cellWidget(row, 9):
+                self.table.cellWidget(row, 9).deleteLater()
             delete_button = QPushButton("Διαγραφή")
             update_button = QPushButton("Ενημέρωση")
             delete_button.setStyleSheet(self.Buttonstylesheet)
