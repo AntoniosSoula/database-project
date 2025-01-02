@@ -475,7 +475,7 @@ QTabBar::tab:selected {
 </string>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tabMeli">
      <attribute name="title">
@@ -848,7 +848,7 @@ QTabBar::tab:selected {
         }</string>
       </property>
       <property name="text">
-       <string>Πίνακας Συνδρομητών</string>
+       <string>Πίνακας Συνδρομών</string>
       </property>
      </widget>
      <widget class="QPushButton" name="buttonPliromon">
@@ -994,7 +994,7 @@ QTabBar::tab:selected {
         }</string>
       </property>
       <property name="text">
-       <string>Πίνακας Εσόδων-Εξόδων</string>
+       <string>Έσοδα-Έξοδα</string>
       </property>
      </widget>
     </widget>

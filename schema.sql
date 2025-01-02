@@ -247,4 +247,5 @@ CREATE INDEX idx_eponimo ON ΜΕΛΟΣ("επώνυμο");
 CREATE INDEX idx_hmerominia_genisis ON ΜΕΛΟΣ("ημερομηνία γέννησης");
 CREATE INDEX idx_thlefono ON ΜΕΛΟΣ("τηλέφωνο");
 CREATE INDEX idx_filo ON ΜΕΛΟΣ("φύλο");
+CREATE INDEX idxemail ON ΠΡΟΠΟΝΗΤΗΣ("email");
 COMMIT;
