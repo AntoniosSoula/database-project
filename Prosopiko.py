@@ -1,9 +1,9 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout, QPushButton, QMessageBox,QInputDialog
+from PyQt6.QtWidgets import QApplication, QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout, QPushButton, QMessageBox,QInputDialog,QLineEdit
 from PyQt6.uic import loadUi
 import sqlite3
 from PyQt6.QtCore import QDate
-
+from PyQt6.QtCore import Qt
 
 # Κλάση για τη διαχείριση των μελών
 class Prosopiko:
@@ -75,13 +75,15 @@ class Prosopiko:
         # Γεμίζουμε τον πίνακα με δεδομένα
         for row, row_data in enumerate(rows):
             for column, value in enumerate(row_data):
-                self.table.setItem(row, column, QTableWidgetItem(str(value)))
+                item = QTableWidgetItem(str(value))
+                item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)  # Μη επεξεργάσιμο στοιχείο
+                self.table.setItem(row, column, item)
 
             email = row_data[0]
-            cursor.execute(f"""SELECT COUNT(*) FROM "ΠΡΟΠΟΝΗΤΗΣ" WHERE email = ?""", (email,))
+            cursor.execute(f"""SELECT COUNT(*) FROM "{self.table2_name}" WHERE email = ?""", (email,))
             is_coach = cursor.fetchone()[0] > 0
 
-            cursor.execute(f"""SELECT COUNT(*) FROM "ΓΡΑΜΜΑΤΕΑΣ" WHERE email = ?""", (email,))
+            cursor.execute(f"""SELECT COUNT(*) FROM "{self.table3_name}" WHERE email = ?""", (email,))
             is_secretary = cursor.fetchone()[0] > 0
 
             employment = "Προπονητής" if is_coach else "Γραμματέας" if is_secretary else "Άγνωστο"
@@ -103,17 +105,22 @@ class Prosopiko:
         if layout is None:
             layout = QVBoxLayout()
             self.parent.tabProsopiko.setLayout(layout)
+        self.search_bar = QLineEdit()  # Νέο αντικείμενο QLineEdit κάθε φορά
+        self.search_bar.setPlaceholderText("Αναζήτηση...")
+        self.search_bar.textChanged.connect(self.search_member)  # Συνδέουμε το νέο αντικείμενο
 
+            # Προσθήκη widgets στο layout
+        layout.addWidget(self.search_bar)
         layout.addWidget(self.table)
-        layout.addWidget(self.backButton)
-        self.table_shown = True
 
+ 
         # Δημιουργία και σύνδεση του κουμπιού για προσθήκη νέου μέλους
         self.addButton = QPushButton("Προσθήκη Υπαλλήλου")
         self.addButton.setStyleSheet(self.Buttonstylesheet)
         self.addButton.clicked.connect(self.add_member)
         layout.addWidget(self.addButton)
-
+        layout.addWidget(self.backButton)
+        self.table_shown = True
     def delete_member(self, row):
         item = self.table.item(row, 0)
         if item is None:  # Έλεγχος αν το κελί είναι κενό
@@ -325,3 +332,70 @@ class Prosopiko:
                 QMessageBox.critical(self.parent, "Σφάλμα", f"Σφάλμα κατά την ενημέρωση της βάσης: {e}")
             finally:
                 conn.close()
+    def search_member(self):
+        search_text = self.search_bar.text()
+
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        query = f"""
+            SELECT p.email, p.όνομα, p.επώνυμο, p.ΑΦΜ, p.αμοιβή, p.τηλέφωνο, p.IBAN,
+                CASE
+                    WHEN (SELECT COUNT(*) FROM "{self.table2_name}" WHERE email = p.email) > 0 THEN 'Προπονητής'
+                    WHEN (SELECT COUNT(*) FROM "{self.table3_name}" WHERE email = p.email) > 0 THEN 'Γραμματέας'
+                    ELSE 'Άγνωστο'
+                END AS Απασχόληση
+            FROM {self.table_name} p
+            WHERE p.email LIKE ? OR
+                p.επώνυμο LIKE ? OR
+                p.όνομα LIKE ? OR
+                p."ΑΦΜ" LIKE ? OR
+                p.τηλέφωνο LIKE ? OR
+                (
+                    CASE
+                        WHEN (SELECT COUNT(*) FROM "{self.table2_name}" WHERE email = p.email) > 0 THEN 'Προπονητής'
+                        WHEN (SELECT COUNT(*) FROM "{self.table3_name}" WHERE email = p.email) > 0 THEN 'Γραμματέας'
+                        ELSE 'Άγνωστο'
+                    END
+                ) LIKE ?
+            ORDER BY p.επώνυμο, p.όνομα
+        """
+
+        cursor.execute(
+            query,
+            (
+                f"%{search_text}%",
+                f"%{search_text}%",
+                f"%{search_text}%",
+                f"%{search_text}%",
+                f"%{search_text}%",
+                f"%{search_text}%"
+            )
+        )
+        rows = cursor.fetchall()
+
+        self.table.setRowCount(len(rows))
+
+        for row_index, row_data in enumerate(rows):
+            for column, value in enumerate(row_data):
+                item = QTableWidgetItem(str(value))
+                item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                self.table.setItem(row_index, column, item)
+
+            # Δημιουργία κουμπιών "Διαγραφή" και "Ενημέρωση"
+            if self.table.cellWidget(row_index, 8):
+                self.table.cellWidget(row_index, 8).deleteLater()
+            if self.table.cellWidget(row_index, 9):
+                self.table.cellWidget(row_index, 9).deleteLater()
+
+            delete_button = QPushButton("Διαγραφή")
+            update_button = QPushButton("Ενημέρωση")
+            delete_button.setStyleSheet(self.Buttonstylesheet)
+            update_button.setStyleSheet(self.Buttonstylesheet)
+
+            delete_button.clicked.connect(lambda checked, row=row_index: self.delete_member(row))
+            update_button.clicked.connect(lambda checked, row=row_index: self.update_member(row))
+
+            self.table.setCellWidget(row_index, 8, delete_button)
+            self.table.setCellWidget(row_index, 9, update_button)
+
+        conn.close()

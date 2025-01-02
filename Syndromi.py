@@ -154,7 +154,9 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
         # Γεμίζουμε τον πίνακα με δεδομένα
         for row, row_data in enumerate(rows):
             for column, value in enumerate(row_data):
-                self.table.setItem(row, column, QTableWidgetItem(str(value)))
+                item = QTableWidgetItem(str(value))
+                item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)  # Μη επεξεργάσιμο στοιχείο
+                self.table.setItem(row, column, item)
 
             # Δημιουργία κουμπιού για Διαγραφή
             delete_button = QPushButton("Διαγραφή")
@@ -167,7 +169,12 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
         if layout is None:
             layout = QVBoxLayout()
             self.parent.tabSyndromi.setLayout(layout)
+        self.search_bar = QLineEdit()  # Νέο αντικείμενο QLineEdit κάθε φορά
+        self.search_bar.setPlaceholderText("Αναζήτηση...")
+        self.search_bar.textChanged.connect(self.search_member)  # Συνδέουμε το νέο αντικείμενο
 
+            # Προσθήκη widgets στο layout
+        layout.addWidget(self.search_bar)
         layout.addWidget(self.table)
         layout.addWidget(self.backButton)
         self.table_shown = True
@@ -203,7 +210,15 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
         payment_method = payment_method_item.text()
         subscription_package = subscription_package_item.text()
         date = date_item.text()
+        confirmation = QMessageBox.question(
+            self.parent,
+            "Επιβεβαίωση Διαγραφής",
+            f"Είστε σίγουροι ότι θέλετε να διαγράψετε την πληρωμη αυτή;",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
 
+        if confirmation != QMessageBox.StandardButton.Yes:
+            return
         # Αναζήτηση του ID της συνδρομής στη βάση δεδομένων
         conn = sqlite3.connect('database.db')
         cursor = conn.cursor()
@@ -497,3 +512,60 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
         layout.addWidget(self.backButton)
 
         self.table_shown = True
+    def search_member(self):
+        
+        search_text = self.search_bar.text()
+
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        query = f"""SELECT "{Melos.table_name}"."μητρώο_μέλους",
+        "{Melos.table_name}"."όνομα",
+        "{Melos.table_name}"."επώνυμο",
+        "{Syndromi.table_name}"."τρόπος πληρωμής",
+        "{Syndromi.table_name}"."πακέτο συνδρομής",20*(
+        0.8*("{self.table_name}"."κωδικός συνδρομής"=1 OR "{self.table_name}"."κωδικός συνδρομής"=6) +
+        0.7*("{self.table_name}"."κωδικός συνδρομής"=2 OR "{self.table_name}"."κωδικός συνδρομής"=7) +
+        1.1*("{self.table_name}"."κωδικός συνδρομής"=3 OR "{self.table_name}"."κωδικός συνδρομής"=8) +
+        0.6*("{self.table_name}"."κωδικός συνδρομής"=4 OR "{self.table_name}"."κωδικός συνδρομής"=9) +
+        1*("{self.table_name}"."κωδικός συνδρομής"=5 OR "{self.table_name}"."κωδικός συνδρομής"=10))
+        AS "ποσό",
+        "{self.table_name}"."ημερομηνία πληρωμής"
+    FROM 
+        "{self.table_name}"
+    JOIN 
+        "{Melos.table_name}"
+    ON 
+        "{Melos.table_name}"."μητρώο_μέλους" = "{self.table_name}"."μητρώο_μέλους"
+    JOIN 
+        "{Syndromi.table_name}"
+    ON 
+        "{Syndromi.table_name}"."κωδικός συνδρομής" = "{self.table_name}"."κωδικός συνδρομής"
+    WHERE "{Melos.table_name}"."μητρώο_μέλους" LIKE ? OR 
+        "{Melos.table_name}"."όνομα" LIKE ? OR
+        "{Melos.table_name}"."επώνυμο" LIKE ? OR
+        "{Syndromi.table_name}"."τρόπος πληρωμής" LIKE ? OR
+        "ποσό" LIKE ?
+    ORDER BY 
+        CAST(SUBSTR("{self.table_name}"."ημερομηνία πληρωμής", 4, 4) AS INTEGER) DESC,
+        CAST(SUBSTR("{self.table_name}"."ημερομηνία πληρωμής", 1, 2) AS INTEGER) DESC   
+"""
+
+        cursor.execute(query, (f"%{search_text}%", f"%{search_text}%", f"%{search_text}%",f"%{search_text}%", f"%{search_text}%"))
+        rows = cursor.fetchall()
+        conn.close()
+
+        self.table.setRowCount(len(rows))
+
+        for row in range(len(rows)):
+            for column, value in enumerate(rows[row]):
+                item = QTableWidgetItem(str(value))
+                item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)  # Μη επεξεργάσιμο στοιχείο
+                self.table.setItem(row, column, item)
+            if self.table.cellWidget(row,7 ):
+                self.table.cellWidget(row, 7).deleteLater()
+
+            delete_button = QPushButton("Διαγραφή")
+            delete_button.setStyleSheet(self.Buttonstylesheet)
+            delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
+
+            self.table.setCellWidget(row, 7, delete_button)

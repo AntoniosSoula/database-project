@@ -16,6 +16,7 @@ class Main(QDialog):
         self.employers=None
         self.melosplironeisyndromi=None
         self.proponitisproponeimelos=None
+        self.income_expense_viewer=None
         # Συνδέουμε τα κουμπιά με τις αντίστοιχες μεθόδους
         self.buttonTableMeli.clicked.connect(self.show_member_table)
         self.buttonTablePaiktis.clicked.connect(self.show_teampaiktis_table)
@@ -26,6 +27,7 @@ class Main(QDialog):
         self.buttonTableProsopiko.clicked.connect(self.show_employees_table)
         self.buttonPliromon.clicked.connect(self.show_melos_plironei_syndromi_table)
         self.buttonParousiologio.clicked.connect(self.show_proponitis_proponei_melos)
+        self.buttonEE.clicked.connect(self.show_income_expense_viewer)
     def show_member_table(self):
         from Melos import Melos  # Καθυστερημένη εισαγωγή
         if self.melos is None:
@@ -69,6 +71,10 @@ class Main(QDialog):
         if self.melosplironeisyndromi is None:
             self.melosplironeisyndromi=MelosPlironeiSyndromi(self)
         self.melosplironeisyndromi.show_table()
+    def show_income_expense_viewer(self):
+        from EsodaEksoda import IncomeExpenseViewer
+        if not hasattr(self, 'income_expense_viewer') or self.income_expense_viewer is None:
+            self.income_expense_viewer = IncomeExpenseViewer(self)
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = Main()
