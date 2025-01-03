@@ -269,28 +269,27 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
             QMessageBox.warning(self.parent, "Σφάλμα", f"Το μέλος με μητρώο {member_id} δεν βρέθηκε στη βάση δεδομένων.")
             conn.close()
             return
+
         # Ζήτηση τρόπου πληρωμής
         payment_method, ok = QInputDialog.getItem(
-            self.parent, "Τρόπος Πληρωμής", "Επιλέξτε τρόπο πληρωμής:",
-            ["Μετρητά", "Κάρτα"], 0, False
+            self.parent, "Τρόπος Πληρωμής", "Επιλέξτε τρόπο πληρωμής:", ["Μετρητά", "Κάρτα"], 0, False
         )
         if not ok or not payment_method:
             QMessageBox.warning(self.parent, "Ακύρωση", "Δεν επιλέξατε τρόπο πληρωμής.")
             return
 
+        # Ζήτηση ημερομηνίας πληρωμής
         payment_date, ok = QInputDialog.getText(self.parent, "Ημερομηνία Πληρωμής", "Εισάγετε την ημερομηνία πληρωμής (MM-YYYY):")
         if not ok or not payment_date:
             QMessageBox.warning(self.parent, "Ακύρωση", "Δεν εισάγατε ημερομηνία πληρωμής.")
             return
 
         # Έλεγχος μορφής MM-YYYY
-    
         if not re.match(r"^(0[1-9]|1[0-2])-\d{4}$", payment_date):
             QMessageBox.warning(self.parent, "Σφάλμα", "Η ημερομηνία πληρωμής πρέπει να είναι στη μορφή MM-YYYY.")
             return
 
-        # Προαιρετικός έλεγχος αν η ημερομηνία είναι μελλοντική
-
+        # Αποθήκευση ακριβώς όπως δόθηκε (MM-YYYY)
         try:
             payment_month = datetime.strptime(payment_date, "%m-%Y")
             if payment_month > datetime.now():
@@ -300,10 +299,7 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
             QMessageBox.warning(self.parent, "Σφάλμα", "Η ημερομηνία πληρωμής είναι μη έγκυρη.")
             return
 
-
         # Εύρεση του πακέτου συνδρομής
-
-
         # Έλεγχος αν το μέλος είναι "Παίκτης της Ομάδας"
         cursor.execute("SELECT COUNT(*) FROM 'ΠΑΙΚΤΗΣ ΤΗΣ ΟΜΑΔΑΣ' WHERE μητρώο_μέλους = ?", (member_id,))
         if cursor.fetchone()[0] > 0:
@@ -315,25 +311,26 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
                 subscription_package = "Ξένος Παίκτης"
             else:
                 cursor.execute("""
-            SELECT '2 Αδέλφια' 
-            FROM 'ΜΕΛΟΣ' 
-            WHERE μητρώο_μέλους = ? AND πλήθος_αδελφών = 1
-        """, (member_id,))
+                SELECT '2 Αδέλφια' 
+                FROM 'ΜΕΛΟΣ' 
+                WHERE μητρώο_μέλους = ? AND πλήθος_αδελφών = 1
+            """, (member_id,))
                 result = cursor.fetchone()
                 if result:
                     subscription_package = result[0]
                 else:
                     cursor.execute("""
-                SELECT '3 Αδέλφια'
-                FROM 'ΜΕΛΟΣ'
-                WHERE μητρώο_μέλους = ? AND πλήθος_αδελφών >= 2
-            """, (member_id,))
+                    SELECT '3 Αδέλφια'
+                    FROM 'ΜΕΛΟΣ'
+                    WHERE μητρώο_μέλους = ? AND πλήθος_αδελφών >= 2
+                """, (member_id,))
                     result = cursor.fetchone()
                     if result:
                         subscription_package = result[0]
                     else:
-                # Προεπιλογή σε "Κανονική"
+                        # Προεπιλογή σε "Κανονική"
                         subscription_package = "Κανονική"
+
         # Εύρεση κωδικού συνδρομής
         cursor.execute(
             """
@@ -358,10 +355,11 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
                 INSERT INTO ΜΕΛΟΣ_ΠΛΗΡΩΝΕΙ_ΣΥΝΔΡΟΜΗ ("κωδικός συνδρομής", "μητρώο_μέλους", "ημερομηνία πληρωμής")
                 VALUES (?, ?, ?)
                 """,
-                (subscription_id, member_id, payment_date)
+                (subscription_id, member_id, payment_date)  # Αποθήκευση σε μορφή MM-YYYY
             )
             conn.commit()
             QMessageBox.information(self.parent, "Επιτυχία", "Η πληρωμή καταχωρήθηκε επιτυχώς.")
+                        # Ανάκτηση της γραμμής
             cursor.execute(
                 f"""
                 SELECT "{Melos.table_name}"."μητρώο_μέλους",
@@ -423,47 +421,45 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
             delete_button.clicked.connect(lambda checked, row=row_position: self.delete_entry(row))
             self.table.setCellWidget(row_position, 7, delete_button)
 
-
         except sqlite3.IntegrityError as e:
             QMessageBox.warning(self.parent, "Σφάλμα", f"Αποτυχία καταχώρησης πληρωμής: {e}")
         finally:
             conn.close()
 
+
     def show_debts_table(self):
         self.backButton = QPushButton("Επιστροφή")
         self.backButton.setStyleSheet(self.Buttonstylesheet)
         self.backButton.clicked.connect(self.go_back)
-
-        # Updated query with strftime for consistent date formatting
         query = (f"""SELECT "{Melos.table_name}"."μητρώο_μέλους",
+                        "{Melos.table_name}"."όνομα",
+                        "{Melos.table_name}"."επώνυμο",
+                        "{Syndromi.table_name}"."τρόπος πληρωμής",
+                        "{Syndromi.table_name}"."πακέτο συνδρομής",
+                        20*(
+                            0.8*("{self.table_name}"."κωδικός συνδρομής"=1 OR "{self.table_name}"."κωδικός συνδρομής"=6) +
+                            0.7*("{self.table_name}"."κωδικός συνδρομής"=2 OR "{self.table_name}"."κωδικός συνδρομής"=7) +
+                            1.1*("{self.table_name}"."κωδικός συνδρομής"=3 OR "{self.table_name}"."κωδικός συνδρομής"=8) +
+                            0.6*("{self.table_name}"."κωδικός συνδρομής"=4 OR "{self.table_name}"."κωδικός συνδρομής"=9) +
+                            1*("{self.table_name}"."κωδικός συνδρομής"=5 OR "{self.table_name}"."κωδικός συνδρομής"=10)
+                        ) AS "ποσό",
+                        MAX("{self.table_name}"."ημερομηνία πληρωμής") AS "τελευταία πληρωμή"
+                    FROM "{self.table_name}"
+                    JOIN "{Melos.table_name}"
+                    ON "{Melos.table_name}"."μητρώο_μέλους" = "{self.table_name}"."μητρώο_μέλους"
+                    JOIN "{Syndromi.table_name}"
+                    ON "{Syndromi.table_name}"."κωδικός συνδρομής" = "{self.table_name}"."κωδικός συνδρομής"
+                    GROUP BY "{Melos.table_name}"."μητρώο_μέλους",
                             "{Melos.table_name}"."όνομα",
                             "{Melos.table_name}"."επώνυμο",
                             "{Syndromi.table_name}"."τρόπος πληρωμής",
-                            "{Syndromi.table_name}"."πακέτο συνδρομής",
-                            20*(
-                                0.8*("{self.table_name}"."κωδικός συνδρομής"=1 OR "{self.table_name}"."κωδικός συνδρομής"=6) +
-                                0.7*("{self.table_name}"."κωδικός συνδρομής"=2 OR "{self.table_name}"."κωδικός συνδρομής"=7) +
-                                1.1*("{self.table_name}"."κωδικός συνδρομής"=3 OR "{self.table_name}"."κωδικός συνδρομής"=8) +
-                                0.6*("{self.table_name}"."κωδικός συνδρομής"=4 OR "{self.table_name}"."κωδικός συνδρομής"=9) +
-                                1*("{self.table_name}"."κωδικός συνδρομής"=5 OR "{self.table_name}"."κωδικός συνδρομής"=10)
-                            ) AS "ποσό",
-                            strftime('%m-%Y', MAX("{self.table_name}"."ημερομηνία πληρωμής")) AS "τελευταία πληρωμή"
-                        FROM "{self.table_name}"
-                        JOIN "{Melos.table_name}"
-                        ON "{Melos.table_name}"."μητρώο_μέλους" = "{self.table_name}"."μητρώο_μέλους"
-                        JOIN "{Syndromi.table_name}"
-                        ON "{Syndromi.table_name}"."κωδικός συνδρομής" = "{self.table_name}"."κωδικός συνδρομής"
-                        GROUP BY "{Melos.table_name}"."μητρώο_μέλους",
-                                "{Melos.table_name}"."όνομα",
-                                "{Melos.table_name}"."επώνυμο",
-                                "{Syndromi.table_name}"."τρόπος πληρωμής",
-                                "{Syndromi.table_name}"."πακέτο συνδρομής"
-                        ORDER BY 
-                            CAST(SUBSTR(strftime('%m-%Y', MAX("{self.table_name}"."ημερομηνία πληρωμής")), 4, 4) AS INTEGER) DESC,
-                            CAST(SUBSTR(strftime('%m-%Y', MAX("{self.table_name}"."ημερομηνία πληρωμής")), 1, 2) AS INTEGER) DESC
-                    """)
+                            "{Syndromi.table_name}"."πακέτο συνδρομής"
+                    ORDER BY 
+                        CAST(SUBSTR(MAX("{self.table_name}"."ημερομηνία πληρωμής"), 4, 4) AS INTEGER) DESC,
+                        CAST(SUBSTR(MAX("{self.table_name}"."ημερομηνία πληρωμής"), 1, 2) AS INTEGER) DESC
+                """)
 
-        # Clear the layout of the tabSyndromi
+        # Καθαρισμός του layout του tabSyndromi
         layout = self.parent.tabSyndromi.layout()
         if layout is not None:
             while layout.count():
@@ -471,7 +467,8 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
                 if child.widget():
                     child.widget().deleteLater()
 
-        # Fetch data from the database
+        # Δημιουργούμε έναν νέο πίνακα
+        self.table = QTableWidget()
         conn = sqlite3.connect('database.db')
         cursor = conn.cursor()
         cursor.execute("PRAGMA foreign_keys = ON;")
@@ -479,38 +476,36 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
         rows = cursor.fetchall()
         conn.close()
 
-        # Create a new table widget
-        self.table = QTableWidget()
+        # Ρυθμίσεις του πίνακα
         self.table.setRowCount(len(rows))
-        self.table.setColumnCount(8)  # 8 columns
+        self.table.setColumnCount(8)
         self.table.setHorizontalHeaderLabels([
             "Μητρώο Μέλους", "Όνομα", "Επώνυμο", "Τρόπος Πληρωμής",
             "Πακέτο Συνδρομής", "Ποσό", "Τελευταία Πληρωμή", "Κατάσταση"
         ])
 
-        # Get today's date in MM-YYYY format
-        today = datetime.today().strftime("%m-%Y")
 
-        # Fill table with data and colorize rows
+        today = datetime.today().strftime("%m-%Y")  # Λήψη τρέχοντος μήνα και έτους (π.χ., "09-2024")
+
         for row_idx, row_data in enumerate(rows):
-            # Check if the last payment date matches today's month-year
-            last_payment_date = row_data[-1]  # This is already in MM-YYYY format from the query
-            has_paid = last_payment_date == today  # Compare as strings
-            color = QColor("green") if has_paid else QColor("red")  # Use green for paid, red for due
+            has_paid = row_data[-1].endswith(today)  # Έλεγχος αν η ημερομηνία πληρωμής είναι αυτόν τον μήνα
+            color = QColor("green") if has_paid else QColor("red")  # Χρήση QColor για το χρώμα
 
             for col_idx, value in enumerate(row_data):
                 item = QTableWidgetItem(str(value))
-                item.setBackground(color)  # Set the cell background color
+                item.setBackground(color)  # Ορίζει το χρώμα του κελιού
                 self.table.setItem(row_idx, col_idx, item)
 
-            # Add status column
+            # Κατάσταση: "Πληρωμένο" ή "Οφειλή"
             status = "Πληρωμένο" if has_paid else "Οφειλή"
             status_item = QTableWidgetItem(status)
             status_item.setBackground(color)
-            self.table.setItem(row_idx, 7, status_item)
+            self.table.setItem(row_idx, 7, status_item)  # Στήλη Κατάσταση
 
-        # Add the table and the "Back" button to the layout
+        # Προσθήκη του πίνακα και του κουμπιού "Επιστροφή"
         layout.addWidget(self.table)
+
+        # Προσθέτουμε ξανά το κουμπί "Επιστροφή"
         layout.addWidget(self.backButton)
 
         self.table_shown = True

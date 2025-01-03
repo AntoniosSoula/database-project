@@ -1,12 +1,13 @@
 import sqlite3
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QComboBox, QTextEdit, QMessageBox
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QComboBox, QTextEdit, QMessageBox,QPushButton
 from datetime import datetime, timedelta
 
 class IncomeExpenseViewer(QDialog):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
-
+        self.table_shown = True 
+        self.Buttonstylesheet = self.load_stylesheet("Buttonstyle.txt")
         # Ρύθμιση του layout
         self.layout = self.parent.tabSyndromi.layout()
         if self.layout is None:
@@ -26,7 +27,32 @@ class IncomeExpenseViewer(QDialog):
         # Φόρτωση δεδομένων και ενημέρωση
         self.load_dates()
         self.update_income_expense()
+        self.backButton = QPushButton("Επιστροφή", self)
+        self.backButton.setStyleSheet(self.Buttonstylesheet)
+        self.backButton.clicked.connect(self.go_back)
+        self.layout.addWidget(self.backButton)
+    def load_stylesheet(self, style):
+        """Loads a stylesheet from a file."""
+        try:
+            with open(style, "r") as f:
+                return f.read()
+        except Exception as e:
+            print(f"Error loading stylesheet: {e}")
+            return ""
 
+    def go_back(self):
+        """Clears the layout and resets the parent view."""
+        if self.table_shown:
+            # Clear layout
+            if self.layout is not None:
+                while self.layout.count():
+                    child = self.layout.takeAt(0)
+                    if child.widget():
+                        child.widget().deleteLater()
+            self.table_shown = False
+
+            # Re-enable the parent button if needed
+            self.parent.buttonSyndromh.setEnabled(True)
     def load_dates(self):
         """ Φορτώνει τους μήνες και τα έτη από τον τρέχοντα μήνα μέχρι έναν χρόνο πριν. """
         current_date = datetime.now()
