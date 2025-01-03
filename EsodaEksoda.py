@@ -52,22 +52,19 @@ class IncomeExpenseViewer(QDialog):
 
             # Υπολογισμός εσόδων
             cursor.execute("""
-SELECT 
-    "κωδικός συνδρομής",
-    SUM(
-        20 * (
-            0.8 * CASE WHEN "κωδικός συνδρομής" IN (1, 6) THEN 1 ELSE 0 END +
-            0.7 * CASE WHEN "κωδικός συνδρομής" IN (2, 7) THEN 1 ELSE 0 END +
-            1.1 * CASE WHEN "κωδικός συνδρομής" IN (3, 8) THEN 1 ELSE 0 END +
-            0.6 * CASE WHEN "κωδικός συνδρομής" IN (4, 9) THEN 1 ELSE 0 END +
-            1.0 * CASE WHEN "κωδικός συνδρομής" IN (5, 10) THEN 1 ELSE 0 END
-        )
-    ) AS income
-FROM "ΜΕΛΟΣ_ΠΛΗΡΩΝΕΙ_ΣΥΝΔΡΟΜΗ"
-WHERE strftime('%m-%Y', "ημερομηνία πληρωμής") = ?
-
-            """, (selected_date,))
-            income = cursor.fetchone()[1] or 0  # Εξασφαλίζουμε ότι δεν θα είναι None
+            SELECT SUM(
+                20 * (
+                    0.8 * CASE WHEN "κωδικός συνδρομής" IN (1, 6) THEN 1 ELSE 0 END +
+                    0.7 * CASE WHEN "κωδικός συνδρομής" IN (2, 7) THEN 1 ELSE 0 END +
+                    1.1 * CASE WHEN "κωδικός συνδρομής" IN (3, 8) THEN 1 ELSE 0 END +
+                    0.6 * CASE WHEN "κωδικός συνδρομής" IN (4, 9) THEN 1 ELSE 0 END +
+                    1.0 * CASE WHEN "κωδικός συνδρομής" IN (5, 10) THEN 1 ELSE 0 END
+                )
+            )
+            FROM "ΜΕΛΟΣ_ΠΛΗΡΩΝΕΙ_ΣΥΝΔΡΟΜΗ"
+            WHERE "ημερομηνία πληρωμής" = ?
+        """, (selected_date,))
+            income = cursor.fetchone()[0] or 0  # Εξασφαλίζουμε ότι δεν θα είναι None
 
             # Υπολογισμός εξόδων
             cursor.execute("""
@@ -77,7 +74,7 @@ WHERE strftime('%m-%Y', "ημερομηνία πληρωμής") = ?
             secretary_expenses = cursor.fetchone()[0] or 0
 
             cursor.execute("""
-                SELECT SUM("αμοιβή")
+                SELECT SUM("αμοιβή"/12)
                 FROM "ΑΜΕΙΒΟΜΕΝΟΣ ΠΑΙΚΤΗΣ"
             """)
             player_expenses = cursor.fetchone()[0] or 0
