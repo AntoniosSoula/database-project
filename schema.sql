@@ -19,7 +19,6 @@ DROP TABLE IF EXISTS "ΠΑΙΚΤΗΣ";
 CREATE TABLE IF NOT EXISTS "ΠΑΙΚΤΗΣ" (
     "RN" CHAR(5) NOT NULL, 
     "μητρώο_μέλους" CHAR(4) NOT NULL,
-    "Δελτίο_ΑΘλητή" BLOB DEFAULT NULL,  -- Το πεδίο αυτό αποθηκεύει δυαδικά δεδομένα
     PRIMARY KEY ( "μητρώο_μέλους"),
     FOREIGN KEY ("μητρώο_μέλους") REFERENCES "ΜΕΛΟΣ"("μητρώο_μέλους") ON DELETE CASCADE ON UPDATE CASCADE
     CONSTRAINT chk_rn CHECK ("RN" GLOB '[0-9][0-9][0-9][0-9][0-9]')

@@ -269,7 +269,12 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
             QMessageBox.warning(self.parent, "Σφάλμα", f"Το μέλος με μητρώο {member_id} δεν βρέθηκε στη βάση δεδομένων.")
             conn.close()
             return
-
+    # Έλεγχος αν το μέλος είναι αμειβόμενος παίκτης
+        cursor.execute("SELECT COUNT(*) FROM 'ΑΜΕΙΒΟΜΕΝΟΣ ΠΑΙΚΤΗΣ' WHERE μητρώο_μέλους = ?", (member_id,))
+        if cursor.fetchone()[0] > 0:
+            QMessageBox.warning(self.parent, "Σφάλμα", f"Το μέλος με μητρώο {member_id} είναι αμειβόμενος παίκτης και δεν επιτρέπεται να πληρώσει συνδρομή.")
+            conn.close()
+            return
         # Ζήτηση τρόπου πληρωμής
         payment_method, ok = QInputDialog.getItem(
             self.parent, "Τρόπος Πληρωμής", "Επιλέξτε τρόπο πληρωμής:", ["Μετρητά", "Κάρτα"], 0, False

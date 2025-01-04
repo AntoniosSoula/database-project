@@ -31,7 +31,6 @@ class TeamPaiktis(Melos):
                     "{super().table_name}"."φύλο", 
                     "{super().table_name}"."πλήθος_αδελφών", 
                     "{self.table_name}"."RN", 
-                    "{self.table_name}"."Δελτίο_ΑΘλητή", 
                     "{self.table2_name}"."ήττες", 
                     "{self.table2_name}"."νίκες", 
                     "{self.table2_name}"."points", 
@@ -45,7 +44,7 @@ class TeamPaiktis(Melos):
             cursor.execute(query)
             rows = cursor.fetchall()
 
-            column_names = ["Μητρώο Μέλους","Όνομα","Επώνυμο","Ημερομηνία Γέννησης","Επίπεδο","Τηλέφωνο","Φύλο","Πλήθος Αδερφών","RN","Δελτίο Αθλητή","Ήττες","Νίκες","Πόντοι","Κατηγορία"]
+            column_names = ["Μητρώο Μέλους","Όνομα","Επώνυμο","Ημερομηνία Γέννησης","Επίπεδο","Τηλέφωνο","Φύλο","Πλήθος Αδερφών","RN","Ήττες","Νίκες","Πόντοι","Κατηγορία"]
             conn.close()
 
             self.table.setRowCount(len(rows))
@@ -107,7 +106,6 @@ class TeamPaiktis(Melos):
                     "{super().table_name}"."φύλο", 
                     "{super().table_name}"."πλήθος_αδελφών", 
                     "{self.table_name}"."RN", 
-                    "{self.table_name}"."Δελτίο_ΑΘλητή", 
                     "{self.table2_name}"."ήττες", 
                     "{self.table2_name}"."νίκες", 
                     "{self.table2_name}"."points", 
@@ -148,12 +146,12 @@ class TeamPaiktis(Melos):
 
             delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
             update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
+            if self.table.cellWidget(row, 13):
+                self.table.cellWidget(row, 13).deleteLater()
             if self.table.cellWidget(row, 14):
                 self.table.cellWidget(row, 14).deleteLater()
-            if self.table.cellWidget(row, 15):
-                self.table.cellWidget(row, 15).deleteLater()
-            self.table.setCellWidget(row, 14, delete_button)
-            self.table.setCellWidget(row, 15, update_button)
+            self.table.setCellWidget(row, 13, delete_button)
+            self.table.setCellWidget(row, 14, update_button)
     def add_member(self):
         # Ζήτα από τον χρήστη το μητρώο μέλους
         μητρώο_μέλους, ok1 = QInputDialog.getText(self.parent, "Εισαγωγή Μητρώου Μέλους", "Μητρώο Μέλους:")
@@ -236,7 +234,6 @@ class TeamPaiktis(Melos):
                             "{super().table_name}"."φύλο", 
                             "{super().table_name}"."πλήθος_αδελφών",
                             "{self.table_name}"."RN", 
-                            "{self.table_name}"."Δελτίο_ΑΘλητή", 
                             "{self.table2_name}"."ήττες", 
                             "{self.table2_name}"."νίκες", 
                             "{self.table2_name}"."points", 
@@ -298,7 +295,7 @@ class TeamPaiktis(Melos):
     
         column_names = [
            "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", "Επίπεδο", 
-            "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών", "Δελτίο Αθλητή", "RN", 
+            "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών", "RN", 
             "Ήττες", "Νίκες", "Points", "Κατηγορία"
         ]
         
@@ -472,7 +469,6 @@ class ΝοTeamPaiktis(Melos):
         "{super().table_name}"."φύλο", 
         "{super().table_name}"."πλήθος_αδελφών",
         "{self.table_name}"."RN", 
-        "{self.table_name}"."Δελτίο_ΑΘλητή", 
         "{self.table2_name}"."ομάδα"
     FROM "{self.table_name}"
     JOIN "{super().table_name}" 
@@ -486,7 +482,7 @@ class ΝοTeamPaiktis(Melos):
             rows = cursor.fetchall()
 
         # Λήψη δυναμικών στηλών
-            column_names = ["Μητρώο Μέλους","Όνομα","Επώνυμο","Ημερομηνία Γέννησης","Επίπεδο","Τηλέφωνο","Φύλο","Πλήθος Αδερφών","RN","Δελτίο Αθλητή","Ομάδα"]
+            column_names = ["Μητρώο Μέλους","Όνομα","Επώνυμο","Ημερομηνία Γέννησης","Επίπεδο","Τηλέφωνο","Φύλο","Πλήθος Αδερφών","RN","Ομάδα"]
 
             conn.close()
 
@@ -547,7 +543,6 @@ class ΝοTeamPaiktis(Melos):
                             "{super().table_name}"."φύλο", 
                             "{super().table_name}"."πλήθος_αδελφών",
                             "{self.table_name}"."RN", 
-                            "{self.table_name}"."Δελτίο_ΑΘλητή", 
                             "{self.table2_name}"."ομάδα"
                         FROM "{self.table_name}"
                         JOIN "{super().table_name}" 
@@ -736,7 +731,7 @@ class ΝοTeamPaiktis(Melos):
     
         column_names = [
            "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", "Επίπεδο", 
-            "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών", "Δελτίο Αθλητή", "RN", 
+            "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών", "RN", 
             "Ομάδα"
         ]
         
@@ -809,8 +804,8 @@ class ΝοTeamPaiktis(Melos):
                 )
 
 
-            elif column_index == 7 or column_index == 8:
-                columns_db = ["Δελτίο_ΑΘλητή", "RN"]
+            elif  column_index == 7:
+                columns_db = ["RN"]
                 
                 cursor.execute(
                     f"""UPDATE "{self.table_name}" SET {columns_db[column_index-7]} = ? WHERE μητρώο_μέλους = ?""",
@@ -818,11 +813,11 @@ class ΝοTeamPaiktis(Melos):
                 )
 
 
-            elif column_index >= 9:
+            elif column_index >= 8:
                 columns_db = ["ομάδα"]
               
                 cursor.execute(
-                    f"""UPDATE "{self.table2_name}" SET {columns_db[column_index-9]} = ? WHERE μητρώο_μέλους = ?""",
+                    f"""UPDATE "{self.table2_name}" SET {columns_db[column_index-8]} = ? WHERE μητρώο_μέλους = ?""",
                     (new_value, member_id)
                 )
 

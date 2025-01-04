@@ -1,13 +1,16 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QDialog
 from PyQt6.uic import loadUi
-
+from login import *
 
 class Main(QDialog):
-    def __init__(self):
+    def __init__(self,role,app):
         super().__init__()
         loadUi("untitled.ui", self)
         self.setFixedSize(self.size())
+        self.setWindowTitle("Αθλητικός Όμιλος Ξυλοκάστρου")
+        self.role = role  # Ο ρόλος του χρήστη
+        self.app=app
         self.melos = None  # Αρχικοποιούμε το στιγμιότυπο της κλάσης Meli
         self.playerInTeam = None
         self.playerNoInTeam = None
@@ -28,6 +31,20 @@ class Main(QDialog):
         self.buttonPliromon.clicked.connect(self.show_melos_plironei_syndromi_table)
         self.buttonParousiologio.clicked.connect(self.show_proponitis_proponei_melos)
         self.buttonEE.clicked.connect(self.show_income_expense_viewer)
+        self.apply_role_restrictions()
+    def closeEvent(self, event):
+        """Χειρισμός κλεισίματος παραθύρου Main"""
+        event.accept()  # Αποδοχή του κλεισίματος
+        print("Main window closed. Reopening Login...")
+        self.destroy()
+        # Ανοίγει ξανά το Login
+        login_app = Login()
+        role = login_app.run()
+
+        if role:  # Εάν η σύνδεση είναι επιτυχής
+            new_window = Main(role, self.app)
+            new_window.show()
+
     def show_member_table(self):
         from Melos import Melos  # Καθυστερημένη εισαγωγή
         if self.melos is None:
@@ -75,8 +92,41 @@ class Main(QDialog):
         from EsodaEksoda import IncomeExpenseViewer
         if not hasattr(self, 'income_expense_viewer') or self.income_expense_viewer is None:
             self.income_expense_viewer = IncomeExpenseViewer(self)
+    def apply_role_restrictions(self):
+        if self.role == "Προπονητής":
+            # Απόκρυψη των tabs Syndromi και Prosopiko
+            index_syndromi = self.tab.indexOf(self.tabSyndromi)
+            if index_syndromi != -1:
+                self.tab.removeTab(index_syndromi)
+
+            index_prosopiko = self.tab.indexOf(self.tabProsopiko)
+            if index_prosopiko != -1:
+                self.tab.removeTab(index_prosopiko)
+
+            # Απόκρυψη του κουμπιού buttonTablePaidPaiktis
+            self.buttonTablePaidPaiktis.hide()
+            
+        if self.role == "Γραμματέας":
+                    
+            index_parousia = self.tab.indexOf(self.tabParousiologio)
+            if index_parousia != -1:
+                self.tab.removeTab(index_parousia)
+
+            index_prosopiko = self.tab.indexOf(self.tabProsopiko)
+            if index_prosopiko != -1:
+                self.tab.removeTab(index_prosopiko)
+
+            # Απόκρυψη του κουμπιού buttonTablePaidPaiktis
+            self.buttonTablePaidPaiktis.hide()
+            self.buttonEE.hide()
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = Main()
-    window.show()
-    sys.exit(app.exec())
+    while True:
+        login_app = Login()
+        role = login_app.run()
+        if not role:  # Αν το login έκλεισε χωρίς σύνδεση
+            break
+
+        app = QApplication(sys.argv)
+        main_window = Main(role, app)
+        main_window.show()
+        app.exec()

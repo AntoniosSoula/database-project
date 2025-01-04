@@ -4,7 +4,7 @@ from PyQt6.uic import loadUi
 import sqlite3
 from PyQt6.QtCore import QDate
 from PyQt6.QtCore import Qt
-
+from datetime import datetime
 # Κλάση για τη διαχείριση των μελών
 class Melos:
     table_name='ΜΕΛΟΣ'
@@ -93,17 +93,33 @@ class Melos:
         new_member_id = self.get_next_member_id()
 
         # Αναζήτηση στοιχείων του μέλους από τον χρήστη
-        name, ok1 = QInputDialog.getText(self.parent, "Όνομα", "Εισάγετε το όνομα του μέλους:")  # Use self.parent here
-        surname, ok2 = QInputDialog.getText(self.parent, "Επώνυμο", "Εισάγετε το επώνυμο του μέλους:")  # Use self.parent here
+        name, ok1 = QInputDialog.getText(self.parent, "Όνομα", "Εισάγετε το όνομα του μέλους:")
+        surname, ok2 = QInputDialog.getText(self.parent, "Επώνυμο", "Εισάγετε το επώνυμο του μέλους:")
 
-        if not ok1 or not ok2:  # Αν δεν επιβεβαιώσει τα δεδομένα, επιστρέφουμε
+        if not ok1 or not ok2 or not name or not surname:  # Αν δεν επιβεβαιώσει τα δεδομένα, επιστρέφουμε
+            QMessageBox.warning(self.parent, "Σφάλμα", "Το όνομα και το επώνυμο είναι υποχρεωτικά πεδία.")
             return
 
-        birth_date, ok3 = QInputDialog.getText(self.parent, "Ημερομηνία Γέννησης", "Εισάγετε την ημερομηνία γέννησης (yyyy-MM-dd):")  # Use self.parent here
-        level, ok4 = QInputDialog.getItem(self.parent, "Επίπεδο", "Επιλέξτε το επίπεδο του μέλους:", ["ΑΡΧΑΡΙΟΣ", "ΕΡΑΣΙΤΕΧΝΗΣ", "ΠΡΟΧΩΡΗΜΕΝΟΣ", "ΕΠΑΓΓΕΛΜΑΤΙΑΣ"], 0, False)  # Use self.parent here
-        phone, ok5 = QInputDialog.getText(self.parent, "Τηλέφωνο", "Εισάγετε το τηλέφωνο του μέλους:")  # Use self.parent here
-        gender, ok6 = QInputDialog.getItem(self.parent, "Φύλο", "Επιλέξτε το φύλο του μέλους:", ["ΑΡΡΕΝ", "ΘΗΛΥ"], 0, False)  # Use self.parent here
-        siblings, ok7 = QInputDialog.getInt(self.parent, "Πλήθος Αδελφών", "Εισάγετε τον αριθμό αδελφών του μέλους:", 0, 0, 10)  # Use self.parent here
+        birth_date, ok3 = QInputDialog.getText(self.parent, "Ημερομηνία Γέννησης", "Εισάγετε την ημερομηνία γέννησης (yyyy-MM-dd):")
+        try:
+            birth_date_obj = datetime.strptime(birth_date, "%Y-%m-%d")
+            if birth_date_obj > datetime.now():
+                QMessageBox.warning(self.parent, "Σφάλμα", "Η ημερομηνία γέννησης πρέπει να είναι στο παρελθόν.")
+                return
+        except ValueError:
+            QMessageBox.warning(self.parent, "Σφάλμα", "Μη έγκυρη μορφή ημερομηνίας. Χρησιμοποιήστε τη μορφή yyyy-MM-dd.")
+            return
+
+        level, ok4 = QInputDialog.getItem(self.parent, "Επίπεδο", "Επιλέξτε το επίπεδο του μέλους:",
+                                        ["ΑΡΧΑΡΙΟΣ", "ΕΡΑΣΙΤΕΧΝΗΣ", "ΠΡΟΧΩΡΗΜΕΝΟΣ", "ΕΠΑΓΓΕΛΜΑΤΙΑΣ"], 0, False)
+
+        phone, ok5 = QInputDialog.getText(self.parent, "Τηλέφωνο", "Εισάγετε το τηλέφωνο του μέλους:")
+        if not phone.isdigit() or len(phone) != 10:
+            QMessageBox.warning(self.parent, "Σφάλμα", "Το τηλέφωνο πρέπει να αποτελείται από 10 αριθμητικά ψηφία.")
+            return
+
+        gender, ok6 = QInputDialog.getItem(self.parent, "Φύλο", "Επιλέξτε το φύλο του μέλους:", ["ΑΡΡΕΝ", "ΘΗΛΥ"], 0, False)
+        siblings, ok7 = QInputDialog.getInt(self.parent, "Πλήθος Αδελφών", "Εισάγετε τον αριθμό αδελφών του μέλους:", 0, 0, 10)
 
         if not (ok1 and ok2 and ok3 and ok4 and ok5 and ok6 and ok7):
             return  # Αν κάποιος από τους χρήστες δεν έχει εισάγει τα δεδομένα ή ακύρωσε, επιστρέφουμε
@@ -126,9 +142,7 @@ class Melos:
                 siblings
             ))
             conn.commit()
-            conn.close()
 
-            # Εμφάνιση μηνύματος επιτυχίας
             QMessageBox.information(self.parent, "Επιτυχία", f"Το μέλος με μητρώο {new_member_id} προστέθηκε επιτυχώς.")
             row = self.table.rowCount()  # Λήψη του τρέχοντος αριθμού γραμμών
             self.table.insertRow(row)  # Προσθήκη νέας γραμμής
@@ -142,20 +156,19 @@ class Melos:
             self.table.setItem(row, 5, QTableWidgetItem(phone))
             self.table.setItem(row, 6, QTableWidgetItem(gender))
             self.table.setItem(row, 7, QTableWidgetItem(str(siblings)))
-            
+
             delete_button = QPushButton("Διαγραφή")
             update_button = QPushButton("Ενημέρωση")
 
-            # Σύνδεση κουμπιών με τις αντίστοιχες μεθόδους
             delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
             update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
 
             self.table.setCellWidget(row, 8, delete_button)  # Διαγραφή στην στήλη 8
             self.table.setCellWidget(row, 9, update_button)  # Ενημέρωση στην στήλη 9
         except sqlite3.IntegrityError as e:
-            print(f"Σφάλμα κατά την εισαγωγή στην βάση: {e}")
-            QMessageBox.warning(self.parent, "Σφάλμα", f"Σφάλμα στην προσθήκη μέλους: {e}")
-
+            QMessageBox.warning(self.parent, "Σφάλμα", f"Σφάλμα κατά την εισαγωγή: {e}")
+        finally:
+            conn.close()
     def delete_member(self, row):
         item = self.table.item(row, 0)
         if item is None:  # Έλεγχος αν το κελί είναι κενό
@@ -329,7 +342,7 @@ class Melos:
             WHERE μητρώο_μέλους LIKE ? OR
                   επώνυμο LIKE ? OR
                   όνομα LIKE ? OR
-                  "ημρομηνία γέννησης" LIKE ?  OR
+                  "ημερομηνία γέννησης" LIKE ?  OR
                   "τηλέφωνο" LIKE ? OR
                   "φύλο" LIKE ?
         """
