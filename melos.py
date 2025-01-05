@@ -43,7 +43,7 @@ class Melos:
         self.table.setRowCount(len(rows))
         self.table.setColumnCount(10)  # 10 στήλες (συμπεριλαμβανομένων Διαγραφή και Ενημέρωση)
         self.table.setHorizontalHeaderLabels(
-            ["Μητρώο Μέλους", "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", 
+            ["Μητρώο Μέλους", "Όνομα", "Επώνυμο", "Ημερομηνία Γέννησης", 
             "Επίπεδο", "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών", "Διαγραφή", "Ενημέρωση"]
         )
 
@@ -149,8 +149,8 @@ class Melos:
 
             # Ρύθμιση των κελιών με τα νέα δεδομένα
             self.table.setItem(row, 0, QTableWidgetItem(new_member_id))
-            self.table.setItem(row, 1, QTableWidgetItem(surname))
-            self.table.setItem(row, 2, QTableWidgetItem(name))
+            self.table.setItem(row, 1, QTableWidgetItem(name))
+            self.table.setItem(row, 2, QTableWidgetItem(surname))
             self.table.setItem(row, 3, QTableWidgetItem(birth_date))
             self.table.setItem(row, 4, QTableWidgetItem(level))
             self.table.setItem(row, 5, QTableWidgetItem(phone))
@@ -159,7 +159,8 @@ class Melos:
 
             delete_button = QPushButton("Διαγραφή")
             update_button = QPushButton("Ενημέρωση")
-
+            delete_button.setStyleSheet(self.Buttonstylesheet)
+            update_button.setStyleSheet(self.Buttonstylesheet)
             delete_button.clicked.connect(lambda checked, row=row: self.delete_member(row))
             update_button.clicked.connect(lambda checked, row=row: self.update_member(row))
 
@@ -224,7 +225,7 @@ class Melos:
         # Επιλέγουμε τον αριθμό μητρώου και ζητάμε νέα δεδομένα για ενημέρωση
         member_id = self.table.item(row, 0).text()
         column_names = [
-            "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", "Επίπεδο", 
+            "Όνομα", "Επώνυμο", "Ημερομηνία Γέννησης", "Επίπεδο", 
             "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών"
         ]
         
@@ -283,7 +284,7 @@ class Melos:
                 return
 
         # Ενημέρωση της βάσης δεδομένων
-        columns_db = ["επώνυμο", "όνομα", "ημερομηνία_γέννησης", "επίπεδο", 
+        columns_db = ["όνομα", "επώνυμο", "ημερομηνία_γέννησης", "επίπεδο", 
                     "τηλέφωνο", "φύλο", "πλήθος_αδελφών"]
         conn = sqlite3.connect('database.db')
         cursor = conn.cursor()
@@ -339,15 +340,17 @@ class Melos:
         cursor = conn.cursor()
         query = f"""
             SELECT * FROM {self.table_name}
-            WHERE μητρώο_μέλους LIKE ? OR
-                  επώνυμο LIKE ? OR
-                  όνομα LIKE ? OR
-                  "ημερομηνία γέννησης" LIKE ?  OR
-                  "τηλέφωνο" LIKE ? OR
-                  "φύλο" LIKE ?
+            WHERE "{self.table_name}"."μητρώο_μέλους" LIKE ? OR
+                  "{self.table_name}"."επώνυμο" LIKE ? OR
+                  "{self.table_name}"."όνομα" LIKE ? OR
+                  "{self.table_name}"."ημερομηνία_γέννησης" LIKE ?  OR
+                  "{self.table_name}"."τηλέφωνο" LIKE ? OR
+                  "{self.table_name}"."φύλο" LIKE ?  OR
+                  "{self.table_name}"."επίπεδο" LIKE ? 
+                  
         """
 
-        cursor.execute(query, (f"%{search_text}%", f"%{search_text}%", f"%{search_text}%",f"%{search_text}%", f"%{search_text}%", f"%{search_text}%"))
+        cursor.execute(query, (f"%{search_text}%", f"%{search_text}%",f"%{search_text}%", f"%{search_text}%",f"%{search_text}%", f"%{search_text}%", f"%{search_text}%"))
         rows = cursor.fetchall()
         conn.close()
 

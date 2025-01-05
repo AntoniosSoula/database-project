@@ -116,13 +116,13 @@ class TeamPaiktis(Melos):
                 JOIN "{self.table2_name}"
                     ON "{self.table_name}"."μητρώο_μέλους" = "{self.table2_name}"."μητρώο_μέλους"
                 WHERE "{super().table_name}"."μητρώο_μέλους" LIKE ? OR
-                    "{super().table_name}"."όνομα" LIKE ? OR "{super().table_name}"."επώνυμο" LIKE ? OR
+                    "{super().table_name}"."όνομα" LIKE ? COLLATE NOCASE OR "{super().table_name}"."επώνυμο" LIKE ? COLLATE NOCASE OR
                     "{super().table_name}"."ημερομηνία_γέννησης" LIKE ? OR
-                    "{super().table_name}"."επίπεδο" LIKE ? OR
+                    "{super().table_name}"."επίπεδο" LIKE ? COLLATE NOCASE OR
                     "{super().table_name}"."τηλέφωνο" LIKE ? OR
-                    "{super().table_name}"."φύλο" LIKE ? OR
+                    "{super().table_name}"."φύλο" LIKE ? COLLATE NOCASE OR
                     "{self.table_name}"."RN" LIKE ? OR
-                     "{self.table2_name}"."κατηγορία" LIKE ?
+                     "{self.table2_name}"."κατηγορία" LIKE ? COLLATE NOCASE
                     
                 
             """
@@ -160,12 +160,7 @@ class TeamPaiktis(Melos):
             QMessageBox.warning(self.parent, "Σφάλμα", "Πρέπει να εισάγεις το μητρώο μέλους.")
             return
 
-        # Ζήτα από τον χρήστη το RN
-        RN, ok2 = QInputDialog.getText(self.parent, "Εισαγωγή RN", "RN:")
 
-        if not ok2 or not RN:  # Εάν ο χρήστης δεν εισάγει το RN
-            QMessageBox.warning(self.parent, "Σφάλμα", "Πρέπει να εισάγεις το RN.")
-            return
 
         conn = sqlite3.connect('database.db')
         cursor = conn.cursor()
@@ -205,6 +200,12 @@ class TeamPaiktis(Melos):
         if foreign_player:  # Αν το μητρώο μέλους υπάρχει ήδη στον πίνακα "ΞΕΝΟΣ ΠΑΙΚΤΗΣ"
             QMessageBox.warning(self.parent, "Σφάλμα", "Ο παίκτης είναι ήδη ξένος παίκτης.")
             conn.close()
+            return
+                # Ζήτα από τον χρήστη το RN
+        RN, ok2 = QInputDialog.getText(self.parent, "Εισαγωγή RN", "RN:")
+
+        if not ok2 or not RN:  # Εάν ο χρήστης δεν εισάγει το RN
+            QMessageBox.warning(self.parent, "Σφάλμα", "Πρέπει να εισάγεις το RN.")
             return
         try:
             
@@ -294,7 +295,7 @@ class TeamPaiktis(Melos):
         
     
         column_names = [
-           "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", "Επίπεδο", 
+           "Όνομα", "Επώνυμο", "Ημερομηνία Γέννησης", "Επίπεδο", 
             "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών", "RN", 
             "Ήττες", "Νίκες", "Points", "Κατηγορία"
         ]
@@ -368,8 +369,8 @@ class TeamPaiktis(Melos):
                 )
 
 
-            elif column_index == 7 or column_index == 8:
-                columns_db = ["Δελτίο_ΑΘλητή", "RN"]
+            elif column_index == 7:
+                columns_db = [ "RN"]
                 
                 cursor.execute(
                     f"""UPDATE "{self.table_name}" SET {columns_db[column_index-7]} = ? WHERE μητρώο_μέλους = ?""",
@@ -377,7 +378,7 @@ class TeamPaiktis(Melos):
                 )
 
 
-            elif column_index >= 9:
+            elif column_index >= 8:
                 columns_db = ["ήττες", "νίκες", "points", "κατηγορία"]
               
                 cursor.execute(
@@ -557,12 +558,14 @@ class ΝοTeamPaiktis(Melos):
                     "{super().table_name}"."τηλέφωνο" LIKE ? OR
                     "{super().table_name}"."φύλο" LIKE ? OR
                     "{self.table_name}"."RN" LIKE ? OR
-                     "{self.table2_name}"."ομάδα" LIKE ?
+                     "{self.table2_name}"."ομάδα" LIKE ? OR "{super().table_name}"."επίπεδο" LIKE ? OR
+                     "{super().table_name}"."τηλέφωνο" LIKE ?
+                     
                     
                 
             """
 
-        cursor.execute(query, (f"%{search_text}%", f"%{search_text}%", f"%{search_text}%",f"%{search_text}%", f"%{search_text}%", f"%{search_text}%",f"%{search_text}%", f"%{search_text}%", f"%{search_text}%"))
+        cursor.execute(query, (f"%{search_text}%",f"%{search_text}%", f"%{search_text}%", f"%{search_text}%",f"%{search_text}%", f"%{search_text}%", f"%{search_text}%",f"%{search_text}%", f"%{search_text}%", f"%{search_text}%", f"%{search_text}%"))
         rows = cursor.fetchall()
         conn.close()
 
@@ -596,16 +599,7 @@ class ΝοTeamPaiktis(Melos):
             return
 
         # Ζήτα από τον χρήστη το RN
-        RN, ok2 = QInputDialog.getText(self.parent, "Εισαγωγή RN", "RN:")
 
-        if not ok2 or not RN:  # Εάν ο χρήστης δεν εισάγει το RN
-            QMessageBox.warning(self.parent, "Σφάλμα", "Πρέπει να εισάγεις το RN.")
-            return
-        team, ok3 = QInputDialog.getText(self.parent, "Εισαγωγή Ομάδας", "Ομάδα Ξένου Παίκτη:")
-
-        if not ok3 or not team:  # Εάν ο χρήστης δεν εισάγει την ομάδα
-            QMessageBox.warning(self.parent, "Σφάλμα", "Πρέπει να εισάγεις την ομάδα.")
-            return
         conn = sqlite3.connect('database.db')
         cursor = conn.cursor()
         cursor.execute("PRAGMA foreign_keys = ON;")
@@ -645,6 +639,16 @@ class ΝοTeamPaiktis(Melos):
             QMessageBox.warning(self.parent, "Σφάλμα", "Ο παίκτης είναι ήδη ξένος παίκτης.")
             conn.close()
             return
+        RN, ok2 = QInputDialog.getText(self.parent, "Εισαγωγή RN", "RN:")
+
+        if not ok2 or not RN:  # Εάν ο χρήστης δεν εισάγει το RN
+            QMessageBox.warning(self.parent, "Σφάλμα", "Πρέπει να εισάγεις το RN.")
+            return
+        team, ok3 = QInputDialog.getText(self.parent, "Εισαγωγή Ομάδας", "Ομάδα Ξένου Παίκτη:")
+
+        if not ok3 or not team:  # Εάν ο χρήστης δεν εισάγει την ομάδα
+            QMessageBox.warning(self.parent, "Σφάλμα", "Πρέπει να εισάγεις την ομάδα.")
+            return
         try:
             
             cursor.execute(f"""
@@ -673,7 +677,7 @@ class ΝοTeamPaiktis(Melos):
                             "{super().table_name}"."φύλο", 
                             "{super().table_name}"."πλήθος_αδελφών",
                             "{self.table_name}"."RN", 
-                            "{self.table_name}"."Δελτίο_ΑΘλητή", 
+                          
                             "{self.table2_name}"."ομάδα" 
 
                         FROM "{self.table_name}"
@@ -730,7 +734,7 @@ class ΝοTeamPaiktis(Melos):
         
     
         column_names = [
-           "Επώνυμο", "Όνομα", "Ημερομηνία Γέννησης", "Επίπεδο", 
+           "Όνομα", "Επώνυμο", "Ημερομηνία Γέννησης", "Επίπεδο", 
             "Τηλέφωνο", "Φύλο", "Πλήθος Αδερφών", "RN", 
             "Ομάδα"
         ]
@@ -796,7 +800,7 @@ class ΝοTeamPaiktis(Melos):
 
  
             if column_index < 7:
-                columns_db = ["επώνυμο", "όνομα", "ημερομηνία_γέννησης", "επίπεδο", "τηλέφωνο", "φύλο", "πλήθος_αδελφών"]
+                columns_db = ["όνομα", "επώνυμο", "ημερομηνία_γέννησης", "επίπεδο", "τηλέφωνο", "φύλο", "πλήθος_αδελφών"]
                
                 cursor.execute(
                     f"""UPDATE "{super().table_name}" SET {columns_db[column_index]} = ? WHERE μητρώο_μέλους = ?""",
@@ -995,7 +999,7 @@ class PaiktisAmeivomenos(TeamPaiktis):
             JOIN "{super().table_name}"  -- JOIN με ΠΑΙΚΤΗΣ
                 ON "{self.table_name}"."μητρώο_μέλους" = "{super().table_name}"."μητρώο_μέλους"
                 WHERE "{super().table_name}"."μητρώο_μέλους" LIKE ? OR
-                    "{Melos.table_name}"."όνομα" LIKE ? OR "{Melos.table_name}"."επώνυμο" LIKE ? OR
+                    "{Melos.table_name}"."όνομα" LIKE ?  OR "{Melos.table_name}"."επώνυμο" LIKE ? OR
                     "{self.table_name}"."ΑΦΜ" LIKE ? OR
                     "{self.table_name}"."αμοιβή" LIKE ? OR
                     "{Melos.table_name}"."τηλέφωνο" LIKE ? OR
