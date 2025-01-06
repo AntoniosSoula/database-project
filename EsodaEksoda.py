@@ -52,7 +52,9 @@ class IncomeExpenseViewer(QDialog):
             self.table_shown = False
 
             # Re-enable the parent button if needed
+            self.parent.buttonPliromon.setEnabled(True)
             self.parent.buttonSyndromh.setEnabled(True)
+            self.parent.buttonEE.setEnabled(True) 
     def load_dates(self):
         """ Φορτώνει τους μήνες και τα έτη από τον τρέχοντα μήνα μέχρι έναν χρόνο πριν. """
         current_date = datetime.now()
@@ -104,7 +106,7 @@ class IncomeExpenseViewer(QDialog):
                 FROM "ΑΜΕΙΒΟΜΕΝΟΣ ΠΑΙΚΤΗΣ"
                 WHERE ? <= strftime('%Y-%m', "ημερομηνία λήξης συμβολαίου")
             
-            """)
+            """,(selected_date,))
             player_expenses = cursor.fetchone()[0] or 0
 
             cursor.execute("""

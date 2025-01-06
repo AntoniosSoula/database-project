@@ -79,6 +79,8 @@ class Syndromi:
 
             # Ενεργοποίηση του κουμπιού "Πίνακας Μελών"
             self.parent.buttonSyndromh.setEnabled(True)
+            self.parent.buttonEE.setEnabled(True)          
+            self.parent.buttonPliromon.setEnabled(True)  
 
 class MelosPlironeiSyndromi(Syndromi,Melos):
     table_name='ΜΕΛΟΣ_ΠΛΗΡΩΝΕΙ_ΣΥΝΔΡΟΜΗ'
@@ -102,6 +104,8 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
 
             # Ενεργοποίηση του κουμπιού "Πίνακας Μελών"
             self.parent.buttonPliromon.setEnabled(True)
+            self.parent.buttonSyndromh.setEnabled(True)
+            self.parent.buttonEE.setEnabled(True)   
     def show_table(self):
         query = (f"""SELECT "{Melos.table_name}"."μητρώο_μέλους",
         "{Melos.table_name}"."όνομα",
