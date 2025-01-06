@@ -428,7 +428,7 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
             delete_button.setStyleSheet(self.Buttonstylesheet)
             delete_button.clicked.connect(lambda checked, row=row_position: self.delete_entry(row))
             self.table.setCellWidget(row_position, 7, delete_button)
-            self.show_debts_table()
+            #self.show_debts_table()
         except sqlite3.IntegrityError as e:
             QMessageBox.warning(self.parent, "Σφάλμα", f"Αποτυχία καταχώρησης πληρωμής: {e}")
         finally:
@@ -439,33 +439,37 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
         self.backButton = QPushButton("Επιστροφή")
         self.backButton.setStyleSheet(self.Buttonstylesheet)
         self.backButton.clicked.connect(self.go_back)
-        query = (f"""SELECT "{Melos.table_name}"."μητρώο_μέλους",
-                        "{Melos.table_name}"."όνομα",
-                        "{Melos.table_name}"."επώνυμο",
-                        "{Syndromi.table_name}"."τρόπος πληρωμής",
-                        "{Syndromi.table_name}"."πακέτο συνδρομής",
-                        20*(
-                            0.8*("{self.table_name}"."κωδικός συνδρομής"=1 OR "{self.table_name}"."κωδικός συνδρομής"=6) +
-                            0.7*("{self.table_name}"."κωδικός συνδρομής"=2 OR "{self.table_name}"."κωδικός συνδρομής"=7) +
-                            1.1*("{self.table_name}"."κωδικός συνδρομής"=3 OR "{self.table_name}"."κωδικός συνδρομής"=8) +
-                            0.6*("{self.table_name}"."κωδικός συνδρομής"=4 OR "{self.table_name}"."κωδικός συνδρομής"=9) +
-                            1*("{self.table_name}"."κωδικός συνδρομής"=5 OR "{self.table_name}"."κωδικός συνδρομής"=10)
-                        ) AS "ποσό",
-                        MAX("{self.table_name}"."ημερομηνία πληρωμής") AS "τελευταία πληρωμή"
-                    FROM "{self.table_name}"
-                    JOIN "{Melos.table_name}"
-                    ON "{Melos.table_name}"."μητρώο_μέλους" = "{self.table_name}"."μητρώο_μέλους"
-                    JOIN "{Syndromi.table_name}"
-                    ON "{Syndromi.table_name}"."κωδικός συνδρομής" = "{self.table_name}"."κωδικός συνδρομής"
-                    GROUP BY "{Melos.table_name}"."μητρώο_μέλους",
-                            "{Melos.table_name}"."όνομα",
-                            "{Melos.table_name}"."επώνυμο",
-                            "{Syndromi.table_name}"."τρόπος πληρωμής",
-                            "{Syndromi.table_name}"."πακέτο συνδρομής"
-                    ORDER BY 
-                        CAST(SUBSTR(MAX("{self.table_name}"."ημερομηνία πληρωμής"), 4, 4) AS INTEGER) DESC,
-                        CAST(SUBSTR(MAX("{self.table_name}"."ημερομηνία πληρωμής"), 1, 2) AS INTEGER) DESC
-                """)
+        query = (f"""
+    SELECT 
+        "{Melos.table_name}"."μητρώο_μέλους",
+        "{Melos.table_name}"."όνομα",
+        "{Melos.table_name}"."επώνυμο",
+        "{Syndromi.table_name}"."τρόπος πληρωμής",
+        "{Syndromi.table_name}"."πακέτο συνδρομής",
+        20 * (
+            0.8 * CASE WHEN "{self.table_name}"."κωδικός συνδρομής" IN (1, 6) THEN 1 ELSE 0 END +
+            0.7 * CASE WHEN "{self.table_name}"."κωδικός συνδρομής" IN (2, 7) THEN 1 ELSE 0 END +
+            1.1 * CASE WHEN "{self.table_name}"."κωδικός συνδρομής" IN (3, 8) THEN 1 ELSE 0 END +
+            0.6 * CASE WHEN "{self.table_name}"."κωδικός συνδρομής" IN (4, 9) THEN 1 ELSE 0 END +
+            1.0 * CASE WHEN "{self.table_name}"."κωδικός συνδρομής" IN (5, 10) THEN 1 ELSE 0 END
+        ) AS "ποσό",
+        MAX("{self.table_name}"."ημερομηνία πληρωμής") AS "τελευταία πληρωμή"
+    FROM "{self.table_name}"
+    JOIN "{Melos.table_name}"
+        ON "{Melos.table_name}"."μητρώο_μέλους" = "{self.table_name}"."μητρώο_μέλους"
+    JOIN "{Syndromi.table_name}"
+        ON "{Syndromi.table_name}"."κωδικός συνδρομής" = "{self.table_name}"."κωδικός συνδρομής"
+    GROUP BY 
+        "{Melos.table_name}"."μητρώο_μέλους",
+        "{Melos.table_name}"."όνομα",
+        "{Melos.table_name}"."επώνυμο",
+        "{Syndromi.table_name}"."τρόπος πληρωμής",
+        "{Syndromi.table_name}"."πακέτο συνδρομής"
+    ORDER BY 
+    CAST(SUBSTR(MAX("{self.table_name}"."ημερομηνία πληρωμής"), 4, 4) AS INTEGER) DESC, -- Εξαγωγή έτους
+    CAST(SUBSTR(MAX("{self.table_name}"."ημερομηνία πληρωμής"), 1, 2) AS INTEGER) DESC 
+""")
+
 
         # Καθαρισμός του layout του tabSyndromi
         layout = self.parent.tabSyndromi.layout()

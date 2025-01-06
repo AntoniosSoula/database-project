@@ -55,6 +55,9 @@ class IncomeExpenseViewer(QDialog):
             self.parent.buttonPliromon.setEnabled(True)
             self.parent.buttonSyndromh.setEnabled(True)
             self.parent.buttonEE.setEnabled(True) 
+                    # Διαγραφή του στιγμιότυπου για να επιτρέπεται η επαναδημιουργία του
+            self.parent.income_expense_viewer = None
+
     def load_dates(self):
         """ Φορτώνει τους μήνες και τα έτη από τον τρέχοντα μήνα μέχρι έναν χρόνο πριν. """
         current_date = datetime.now()
