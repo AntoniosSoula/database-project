@@ -269,7 +269,6 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
             QMessageBox.warning(self.parent, "Σφάλμα", f"Το μέλος με μητρώο {member_id} δεν βρέθηκε στη βάση δεδομένων.")
             conn.close()
             return
-    # Έλεγχος αν το μέλος είναι αμειβόμενος παίκτης
         cursor.execute("SELECT COUNT(*) FROM 'ΑΜΕΙΒΟΜΕΝΟΣ ΠΑΙΚΤΗΣ' WHERE μητρώο_μέλους = ?", (member_id,))
         if cursor.fetchone()[0] > 0:
             QMessageBox.warning(self.parent, "Σφάλμα", f"Το μέλος με μητρώο {member_id} είναι αμειβόμενος παίκτης και δεν επιτρέπεται να πληρώσει συνδρομή.")
@@ -316,7 +315,7 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
                 subscription_package = "Ξένος Παίκτης"
             else:
                 cursor.execute("""
-                SELECT '2 Αδέλφια' 
+                SELECT '2 αδέλφια' 
                 FROM 'ΜΕΛΟΣ' 
                 WHERE μητρώο_μέλους = ? AND πλήθος_αδελφών = 1
             """, (member_id,))
@@ -325,7 +324,7 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
                     subscription_package = result[0]
                 else:
                     cursor.execute("""
-                    SELECT '3 Αδέλφια'
+                    SELECT '3 αδέλφια'
                     FROM 'ΜΕΛΟΣ'
                     WHERE μητρώο_μέλους = ? AND πλήθος_αδελφών >= 2
                 """, (member_id,))
@@ -334,12 +333,12 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
                         subscription_package = result[0]
                     else:
                         # Προεπιλογή σε "Κανονική"
-                        subscription_package = "Κανονική"
+                        subscription_package = "Κανονικη"
 
         # Εύρεση κωδικού συνδρομής
         cursor.execute(
             """
-            SELECT "κωδικός συνδρομής" FROM ΣΥΝΔΡΟΜΗ
+            SELECT "κωδικός συνδρομής" FROM "ΣΥΝΔΡΟΜΗ"
             WHERE "τρόπος πληρωμής" = ? AND "πακέτο συνδρομής" = ?
             """,
             (payment_method, subscription_package)
@@ -425,7 +424,7 @@ class MelosPlironeiSyndromi(Syndromi,Melos):
             delete_button.setStyleSheet(self.Buttonstylesheet)
             delete_button.clicked.connect(lambda checked, row=row_position: self.delete_entry(row))
             self.table.setCellWidget(row_position, 7, delete_button)
-
+            self.show_debts_table()
         except sqlite3.IntegrityError as e:
             QMessageBox.warning(self.parent, "Σφάλμα", f"Αποτυχία καταχώρησης πληρωμής: {e}")
         finally:

@@ -1289,7 +1289,8 @@ class PaiktisAmeivomenos(TeamPaiktis):
             # Δημιουργία κουμπιών "Διαγραφή" και "Ενημέρωση" για τη νέα γραμμή
             delete_button = QPushButton("Διαγραφή")
             update_button = QPushButton("Ενημέρωση")
-
+            delete_button.setStyleSheet(self.Buttonstylesheet)
+            update_button.setStyleSheet(self.Buttonstylesheet)
             delete_button.clicked.connect(lambda checked, row=row_position: self.delete_member(row_position))
             update_button.clicked.connect(lambda checked, row=row_position: self.update_member(row_position))
 

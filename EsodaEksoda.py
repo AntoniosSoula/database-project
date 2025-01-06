@@ -102,6 +102,8 @@ class IncomeExpenseViewer(QDialog):
             cursor.execute("""
                 SELECT SUM("αμοιβή"/12)
                 FROM "ΑΜΕΙΒΟΜΕΝΟΣ ΠΑΙΚΤΗΣ"
+                WHERE ? <= strftime('%Y-%m', "ημερομηνία λήξης συμβολαίου")
+            
             """)
             player_expenses = cursor.fetchone()[0] or 0
 
